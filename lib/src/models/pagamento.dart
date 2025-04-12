@@ -1,8 +1,9 @@
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 part 'pagamento.g.dart';
 
-@HiveType(typeId: 1)
+@HiveType(typeId: 2)
 enum FormaPagamento {
   @HiveField(0)
   dinheiro,
@@ -14,8 +15,8 @@ enum FormaPagamento {
   credito,
 }
 
-@HiveType(typeId: 2)
-class Pagamento extends HiveObject {
+@HiveType(typeId: 3)
+class Pagamento {
   @HiveField(0)
   final double valor;
 
@@ -23,29 +24,59 @@ class Pagamento extends HiveObject {
   final FormaPagamento formaPagamento;
 
   @HiveField(2)
-  final int? parcelas;
+  final int parcelas;
 
   @HiveField(3)
-  final String? codigoTransacao;
+  final DateTime dataHora;
 
   @HiveField(4)
-  final DateTime dataHora;
+  final bool autorizado;
+
+  @HiveField(5)
+  final String? qrCodePix;
+
+  @HiveField(6)
+  final String? comprovante;
+
+  @HiveField(7)
+  final String codigoTransacao;
 
   Pagamento({
     required this.valor,
     required this.formaPagamento,
-    this.parcelas,
-    this.codigoTransacao,
+    required this.parcelas,
     required this.dataHora,
-  });
+    required this.autorizado,
+    this.qrCodePix,
+    this.comprovante,
+  }) : codigoTransacao = Uuid().v4();
+
+  double get valorParcela => valor / parcelas;
+
+  String get formaPagamentoStr {
+    switch (formaPagamento) {
+      case FormaPagamento.dinheiro:
+        return 'Dinheiro';
+      case FormaPagamento.pix:
+        return 'PIX';
+      case FormaPagamento.debito:
+        return 'Cartão de Débito';
+      case FormaPagamento.credito:
+        return 'Cartão de Crédito';
+    }
+  }
+
+  String get statusPagamento => autorizado ? 'Autorizado' : 'Negado';
 
   Map<String, dynamic> toMap() {
     return {
       'valor': valor,
       'formaPagamento': formaPagamento.index,
       'parcelas': parcelas,
-      'codigoTransacao': codigoTransacao,
       'dataHora': dataHora.toString(),
+      'autorizado': autorizado,
+      'qrCodePix': qrCodePix,
+      'comprovante': comprovante,
     };
   }
 
@@ -54,8 +85,10 @@ class Pagamento extends HiveObject {
       valor: map['valor'],
       formaPagamento: FormaPagamento.values[map['formaPagamento']],
       parcelas: map['parcelas'],
-      codigoTransacao: map['codigoTransacao'],
       dataHora: DateTime.parse(map['dataHora']),
+      autorizado: map['autorizado'],
+      qrCodePix: map['qrCodePix'],
+      comprovante: map['comprovante'],
     );
   }
 } 

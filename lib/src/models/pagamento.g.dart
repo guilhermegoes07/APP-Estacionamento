@@ -8,7 +8,7 @@ part of 'pagamento.dart';
 
 class PagamentoAdapter extends TypeAdapter<Pagamento> {
   @override
-  final int typeId = 2;
+  final int typeId = 3;
 
   @override
   Pagamento read(BinaryReader reader) {
@@ -19,16 +19,18 @@ class PagamentoAdapter extends TypeAdapter<Pagamento> {
     return Pagamento(
       valor: fields[0] as double,
       formaPagamento: fields[1] as FormaPagamento,
-      parcelas: fields[2] as int?,
-      codigoTransacao: fields[3] as String?,
-      dataHora: fields[4] as DateTime,
+      parcelas: fields[2] as int,
+      dataHora: fields[3] as DateTime,
+      autorizado: fields[4] as bool,
+      qrCodePix: fields[5] as String?,
+      comprovante: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Pagamento obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.valor)
       ..writeByte(1)
@@ -36,9 +38,15 @@ class PagamentoAdapter extends TypeAdapter<Pagamento> {
       ..writeByte(2)
       ..write(obj.parcelas)
       ..writeByte(3)
-      ..write(obj.codigoTransacao)
+      ..write(obj.dataHora)
       ..writeByte(4)
-      ..write(obj.dataHora);
+      ..write(obj.autorizado)
+      ..writeByte(5)
+      ..write(obj.qrCodePix)
+      ..writeByte(6)
+      ..write(obj.comprovante)
+      ..writeByte(7)
+      ..write(obj.codigoTransacao);
   }
 
   @override
@@ -54,7 +62,7 @@ class PagamentoAdapter extends TypeAdapter<Pagamento> {
 
 class FormaPagamentoAdapter extends TypeAdapter<FormaPagamento> {
   @override
-  final int typeId = 1;
+  final int typeId = 2;
 
   @override
   FormaPagamento read(BinaryReader reader) {

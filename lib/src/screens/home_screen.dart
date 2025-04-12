@@ -19,6 +19,8 @@ class HomeScreen extends StatelessWidget {
           'Controle de Estacionamento',
           style: TextStyle(
             fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
           ),
         ),
         actions: [
@@ -32,20 +34,33 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: HomeTheme.backgroundGradient,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFE3F2FD),
+              Color(0xFFF5F5F5),
+            ],
+          ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: ResponsiveTheme.getResponsivePadding(context),
-            child: Column(
-              children: [
-                _buildStatusCard(context),
-                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                _buildActionButtons(context),
-                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                _buildFooter(context),
-              ],
-            ),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: ResponsiveTheme.getResponsivePadding(context),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildStatusCard(context),
+                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                      _buildActionButtons(context),
+                    ],
+                  ),
+                ),
+              ),
+              _buildFooter(context),
+            ],
           ),
         ),
       ),
@@ -56,22 +71,34 @@ class HomeScreen extends StatelessWidget {
     return Consumer<EstacionamentoService>(
       builder: (context, service, child) {
         return Card(
-          elevation: 4,
+          elevation: 8,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(24),
           ),
-          child: Padding(
+          child: Container(
             padding: ResponsiveTheme.getResponsivePadding(context),
             child: Column(
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Veículos no Pátio: ${service.veiculosNoPatio.length}',
-                      style: TextStyle(
-                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.directions_car,
+                          size: ResponsiveTheme.getResponsiveIconSize(context),
+                          color: HomeTheme.primaryColor,
+                        ),
+                        SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
+                        Text(
+                          'Veículos no Pátio: ${service.veiculosNoPatio.length}',
+                          style: TextStyle(
+                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                     IconButton(
                       icon: const Icon(Icons.refresh),
@@ -82,12 +109,24 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
                 SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-                Text(
-                  'Valor Arrecadado: R\$ ${service.totalArrecadado.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.attach_money,
+                      size: ResponsiveTheme.getResponsiveIconSize(context),
+                      color: Colors.green,
+                    ),
+                    SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
+                    Text(
+                      'Valor Arrecadado: R\$ ${service.totalArrecadado.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -156,54 +195,81 @@ class HomeScreen extends StatelessWidget {
     required VoidCallback onPressed,
     required Color color,
   }) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        padding: ResponsiveTheme.getResponsivePadding(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: ResponsiveTheme.getResponsiveIconSize(context) * 2,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: EdgeInsets.all(ResponsiveTheme.getResponsiveSpacing(context) * 2),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: ResponsiveTheme.getResponsiveIconSize(context) * 1.5,
+                color: color,
+              ),
+              SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w500,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-          SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildFooter(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          'CNPJ: 00.000.000/0001-00',
-          style: TextStyle(
-            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
-            color: Colors.grey,
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        vertical: ResponsiveTheme.getResponsiveSpacing(context),
+        horizontal: ResponsiveTheme.getResponsiveSpacing(context) * 2,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
-        ),
-        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-        Text(
-          'v1.0.0',
-          style: TextStyle(
-            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
-            color: Colors.grey,
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'CNPJ: 00.000.000/0001-00',
+            style: TextStyle(
+              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
+              fontFamily: 'Poppins',
+              color: Colors.grey.shade600,
+            ),
           ),
-        ),
-      ],
+          SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) / 2),
+          Text(
+            'v1.0.0',
+            style: TextStyle(
+              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
+              fontFamily: 'Poppins',
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 } 

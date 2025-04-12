@@ -8,7 +8,7 @@ part of 'ticket.dart';
 
 class TicketAdapter extends TypeAdapter<Ticket> {
   @override
-  final int typeId = 3;
+  final int typeId = 4;
 
   @override
   Ticket read(BinaryReader reader) {
@@ -17,22 +17,35 @@ class TicketAdapter extends TypeAdapter<Ticket> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Ticket(
-      veiculo: fields[0] as Veiculo,
-      pagamento: fields[1] as Pagamento,
-      codigo: fields[2] as String,
+      codigo: fields[0] as String,
+      veiculo: fields[1] as String,
+      pagamento: fields[2] as Pagamento,
+      cnpjEstacionamento: fields[3] as String,
+      nomeEstacionamento: fields[4] as String,
+      isEntrada: fields[5] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Ticket obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(8)
       ..writeByte(0)
-      ..write(obj.veiculo)
+      ..write(obj.codigo)
       ..writeByte(1)
-      ..write(obj.pagamento)
+      ..write(obj.veiculo)
       ..writeByte(2)
-      ..write(obj.codigo);
+      ..write(obj.pagamento)
+      ..writeByte(3)
+      ..write(obj.cnpjEstacionamento)
+      ..writeByte(4)
+      ..write(obj.nomeEstacionamento)
+      ..writeByte(5)
+      ..write(obj.isEntrada)
+      ..writeByte(6)
+      ..write(obj.dataHora)
+      ..writeByte(7)
+      ..write(obj.codigoTransacao);
   }
 
   @override

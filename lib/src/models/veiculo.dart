@@ -1,37 +1,70 @@
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 part 'veiculo.g.dart';
 
-@HiveType(typeId: 0)
-class Veiculo extends HiveObject {
+@HiveType(typeId: 1)
+class Veiculo {
   @HiveField(0)
   final String placa;
 
   @HiveField(1)
-  final DateTime horaEntrada;
+  DateTime horaEntrada;
 
   @HiveField(2)
   DateTime? horaSaida;
+
+  @HiveField(3)
+  String? fotoPlaca;
+
+  @HiveField(4)
+  String? fotoVeiculo;
+
+  @HiveField(5)
+  bool isNoPatio;
 
   Veiculo({
     required this.placa,
     required this.horaEntrada,
     this.horaSaida,
+    this.fotoPlaca,
+    this.fotoVeiculo,
+    this.isNoPatio = true,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'placa': placa,
-      'horaEntrada': horaEntrada.toString(),
-      'horaSaida': horaSaida?.toString(),
-    };
+  static bool validarPlaca(String placa) {
+    final regex = RegExp(
+      r'^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$',
+    );
+    return regex.hasMatch(placa);
   }
 
-  factory Veiculo.fromMap(Map<String, dynamic> map) {
-    return Veiculo(
-      placa: map['placa'],
-      horaEntrada: DateTime.parse(map['horaEntrada']),
-      horaSaida: map['horaSaida'] != null ? DateTime.parse(map['horaSaida']) : null,
-    );
+  String get placaFormatada {
+    if (placa.length == 7) {
+      return '${placa.substring(0, 3)}-${placa.substring(3)}';
+    }
+    return placa;
+  }
+
+  Duration get tempoEstacionado {
+    final saida = horaSaida ?? DateTime.now();
+    return saida.difference(horaEntrada);
+  }
+
+  double get valorEstacionamento {
+    final horas = tempoEstacionado.inHours;
+    final minutos = tempoEstacionado.inMinutes % 60;
+    final valorHora = 10.0;
+    final valorMinuto = valorHora / 60;
+
+    if (horas == 0 && minutos <= 15) {
+      return 0.0;
+    }
+
+    return (horas * valorHora) + (minutos * valorMinuto);
+  }
+
+  Future<void> save() async {
+    final box = await Hive.openBox<Veiculo>('veiculos');
+    await box.put(placa, this);
   }
 } 

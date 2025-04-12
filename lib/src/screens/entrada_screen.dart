@@ -10,6 +10,8 @@ import '../theme/home_theme.dart';
 import '../theme/form_theme.dart';
 import '../theme/responsive_theme.dart';
 import 'dart:io';
+import 'package:uuid/uuid.dart';
+import 'comprovante_screen.dart';
 
 class EntradaScreen extends StatefulWidget {
   const EntradaScreen({super.key});
@@ -131,91 +133,38 @@ class _EntradaScreenState extends State<EntradaScreen> {
       return;
     }
 
-    final veiculo = Veiculo(
-      placa: _placaController.text,
-      horaEntrada: DateTime.now(),
-    );
-
-    final pagamento = Pagamento(
-      valor: 10.0,
-      formaPagamento: _formaPagamento,
-      parcelas: _formaPagamento == FormaPagamento.credito ? _parcelas : null,
-      dataHora: DateTime.now(),
-    );
-
-    final ticket = Ticket(
-      veiculo: veiculo,
-      pagamento: pagamento,
-      codigo: DateTime.now().millisecondsSinceEpoch.toString(),
-    );
-
     final service = Provider.of<EstacionamentoService>(context, listen: false);
-    final sucesso = await service.registrarEntrada(veiculo);
-    await service.registrarPagamento(pagamento);
+    final veiculo = await service.registrarEntrada(
+      _placaController.text,
+      isEntrada: true,
+    );
 
-    if (sucesso) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(
-            'Ticket Gerado',
-            style: TextStyle(
-              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 18),
-            ),
-          ),
-          content: Container(
-            decoration: FormTheme.imageContainerDecoration,
-            padding: ResponsiveTheme.getResponsivePadding(context),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Placa: ${ticket.veiculo.placa}',
-                  style: TextStyle(
-                    fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                  ),
-                ),
-                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-                Text(
-                  'Entrada: ${ticket.veiculo.horaEntrada}',
-                  style: TextStyle(
-                    fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                  ),
-                ),
-                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-                Text(
-                  'Forma de Pagamento: ${ticket.pagamento.formaPagamento}',
-                  style: TextStyle(
-                    fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                  ),
-                ),
-                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-                Text(
-                  'Código: ${ticket.codigo}',
-                  style: TextStyle(
-                    fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              style: FormTheme.textButtonStyle,
-              child: Text(
-                'OK',
-                style: TextStyle(
-                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
+    if (veiculo) {
+      final pagamento = Pagamento(
+        valor: 0,
+        formaPagamento: FormaPagamento.dinheiro,
+        parcelas: 1,
+        dataHora: DateTime.now(),
+        autorizado: true,
       );
+
+      final ticket = Ticket(
+        codigo: Uuid().v4(),
+        veiculo: _placaController.text,
+        pagamento: pagamento,
+        cnpjEstacionamento: '12.345.678/0001-90',
+        nomeEstacionamento: 'Estacionamento Exemplo',
+        isEntrada: true,
+      );
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ComprovanteScreen(ticket: ticket),
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

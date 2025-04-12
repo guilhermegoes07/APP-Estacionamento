@@ -1,39 +1,53 @@
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'veiculo.dart';
 import 'pagamento.dart';
+import 'package:uuid/uuid.dart';
 
 part 'ticket.g.dart';
 
-@HiveType(typeId: 3)
-class Ticket extends HiveObject {
+@HiveType(typeId: 4)
+class Ticket {
   @HiveField(0)
-  final Veiculo veiculo;
-
-  @HiveField(1)
-  final Pagamento pagamento;
-
-  @HiveField(2)
   final String codigo;
 
+  @HiveField(1)
+  final String veiculo;
+
+  @HiveField(2)
+  final Pagamento pagamento;
+
+  @HiveField(3)
+  final String cnpjEstacionamento;
+
+  @HiveField(4)
+  final String nomeEstacionamento;
+
+  @HiveField(5)
+  final bool isEntrada;
+
+  @HiveField(6)
+  final DateTime dataHora;
+
+  @HiveField(7)
+  final String codigoTransacao;
+
   Ticket({
+    required this.codigo,
     required this.veiculo,
     required this.pagamento,
-    required this.codigo,
-  });
+    required this.cnpjEstacionamento,
+    required this.nomeEstacionamento,
+    required this.isEntrada,
+  }) : dataHora = DateTime.now(),
+       codigoTransacao = Uuid().v4();
 
-  Map<String, dynamic> toMap() {
-    return {
-      'veiculo': veiculo.toMap(),
-      'pagamento': pagamento.toMap(),
-      'codigo': codigo,
-    };
-  }
+  String get tipo => isEntrada ? 'Entrada' : 'Saída';
 
-  factory Ticket.fromMap(Map<String, dynamic> map) {
-    return Ticket(
-      veiculo: Veiculo.fromMap(map['veiculo']),
-      pagamento: Pagamento.fromMap(map['pagamento']),
-      codigo: map['codigo'],
-    );
-  }
+  String get status => isEntrada ? 'Em Aberto' : 'Fechado';
+
+  double get valorTotal => pagamento.valor;
+
+  String get formaPagamento => pagamento.formaPagamentoStr;
+
+  String get statusPagamento => pagamento.statusPagamento;
 } 

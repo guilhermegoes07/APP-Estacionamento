@@ -1,23 +1,12 @@
 import 'package:flutter/material.dart';
 
 class ResponsiveTheme {
-  static double _maxWidth = 1200.0;
-  static double _maxHeight = 800.0;
-
-  static double get maxWidth => _maxWidth;
-  static double get maxHeight => _maxHeight;
-
-  static void setMaxResolution(double width, double height) {
-    _maxWidth = width;
-    _maxHeight = height;
-  }
-
   static double getScreenWidth(BuildContext context) {
-    return MediaQuery.of(context).size.width.clamp(0.0, _maxWidth);
+    return MediaQuery.of(context).size.width;
   }
 
   static double getScreenHeight(BuildContext context) {
-    return MediaQuery.of(context).size.height.clamp(0.0, _maxHeight);
+    return MediaQuery.of(context).size.height;
   }
 
   static bool isMobile(BuildContext context) {
@@ -33,9 +22,10 @@ class ResponsiveTheme {
   }
 
   static double getBasePadding(BuildContext context) {
-    if (isMobile(context)) {
+    final screenWidth = getScreenWidth(context);
+    if (screenWidth < 600) {
       return 16.0;
-    } else if (isTablet(context)) {
+    } else if (screenWidth < 1200) {
       return 24.0;
     } else {
       return 32.0;
@@ -43,9 +33,10 @@ class ResponsiveTheme {
   }
 
   static double getResponsiveFontSize(BuildContext context, {double baseSize = 16.0}) {
-    if (isMobile(context)) {
+    final screenWidth = getScreenWidth(context);
+    if (screenWidth < 600) {
       return baseSize;
-    } else if (isTablet(context)) {
+    } else if (screenWidth < 1200) {
       return baseSize * 1.2;
     } else {
       return baseSize * 1.4;
@@ -53,9 +44,10 @@ class ResponsiveTheme {
   }
 
   static double getResponsiveIconSize(BuildContext context) {
-    if (isMobile(context)) {
+    final screenWidth = getScreenWidth(context);
+    if (screenWidth < 600) {
       return 24.0;
-    } else if (isTablet(context)) {
+    } else if (screenWidth < 1200) {
       return 32.0;
     } else {
       return 40.0;
@@ -78,9 +70,10 @@ class ResponsiveTheme {
   }
 
   static double getResponsiveSpacing(BuildContext context) {
-    if (isMobile(context)) {
+    final screenWidth = getScreenWidth(context);
+    if (screenWidth < 600) {
       return 8.0;
-    } else if (isTablet(context)) {
+    } else if (screenWidth < 1200) {
       return 12.0;
     } else {
       return 16.0;
@@ -88,9 +81,10 @@ class ResponsiveTheme {
   }
 
   static double getResponsiveImageHeight(BuildContext context) {
-    if (isMobile(context)) {
+    final screenWidth = getScreenWidth(context);
+    if (screenWidth < 600) {
       return 120.0;
-    } else if (isTablet(context)) {
+    } else if (screenWidth < 1200) {
       return 160.0;
     } else {
       return 200.0;
