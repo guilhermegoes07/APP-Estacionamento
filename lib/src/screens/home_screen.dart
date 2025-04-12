@@ -3,35 +3,39 @@ import 'package:provider/provider.dart';
 import '../services/estacionamento_service.dart';
 import '../theme/home_theme.dart';
 import '../theme/responsive_theme.dart';
+import '../widgets/shimmer_effect.dart';
 import 'entrada_screen.dart';
 import 'saida_screen.dart';
 import 'busca_screen.dart';
 import 'relatorio_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Simula um carregamento de dados
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() {
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Controle de Estacionamento',
-          style: TextStyle(
-            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // TODO: Implementar tela de configurações
-            },
-          ),
-        ],
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -46,15 +50,26 @@ class HomeScreen extends StatelessWidget {
         child: SafeArea(
           child: Column(
             children: [
+              _buildHeader(context),
               Expanded(
                 child: SingleChildScrollView(
                   padding: ResponsiveTheme.getResponsivePadding(context),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildStatusCard(context),
+                      ShimmerEffect(
+                        isLoading: _isLoading,
+                        child: _buildStatusCard(context),
+                      ),
                       SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
-                      _buildActionButtons(context),
+                      ShimmerEffect(
+                        isLoading: _isLoading,
+                        child: _buildActionButtons(context),
+                      ),
+                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                      ShimmerEffect(
+                        isLoading: _isLoading,
+                        child: _buildDailyReport(context),
+                      ),
                     ],
                   ),
                 ),
@@ -63,6 +78,45 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveTheme.getResponsiveSpacing(context) * 2,
+        vertical: ResponsiveTheme.getResponsiveSpacing(context),
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Controle de Estacionamento',
+            style: TextStyle(
+              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              color: HomeTheme.primaryColor,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              // TODO: Implementar tela de configurações
+            },
+          ),
+        ],
       ),
     );
   }
@@ -140,7 +194,7 @@ class HomeScreen extends StatelessWidget {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
+      crossAxisCount: 3,
       mainAxisSpacing: ResponsiveTheme.getResponsiveSpacing(context) * 2,
       crossAxisSpacing: ResponsiveTheme.getResponsiveSpacing(context) * 2,
       children: [
@@ -173,16 +227,6 @@ class HomeScreen extends StatelessWidget {
             MaterialPageRoute(builder: (context) => const BuscaScreen()),
           ),
           color: Colors.orange,
-        ),
-        _buildActionButton(
-          context,
-          icon: Icons.bar_chart,
-          label: 'Relatório Diário',
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const RelatorioScreen()),
-          ),
-          color: Colors.purple,
         ),
       ],
     );
@@ -228,6 +272,109 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDailyReport(BuildContext context) {
+    return Consumer<EstacionamentoService>(
+      builder: (context, service, child) {
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: ResponsiveTheme.getResponsivePadding(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.bar_chart,
+                      size: ResponsiveTheme.getResponsiveIconSize(context),
+                      color: Colors.purple,
+                    ),
+                    SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
+                    Text(
+                      'Relatório Diário',
+                      style: TextStyle(
+                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.purple,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildReportItem(
+                      context,
+                      label: 'Entradas',
+                      value: '10',
+                      icon: Icons.login,
+                      color: Colors.blue,
+                    ),
+                    _buildReportItem(
+                      context,
+                      label: 'Saídas',
+                      value: '8',
+                      icon: Icons.logout,
+                      color: Colors.green,
+                    ),
+                    _buildReportItem(
+                      context,
+                      label: 'Total',
+                      value: 'R\$ 250,00',
+                      icon: Icons.attach_money,
+                      color: Colors.orange,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReportItem(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          size: ResponsiveTheme.getResponsiveIconSize(context),
+          color: color,
+        ),
+        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) / 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
+            fontFamily: 'Poppins',
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ],
     );
   }
 
