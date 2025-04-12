@@ -1,0 +1,40 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "app_estacionamento",
+            "request": "launch",
+            "type": "dart",
+            "env": {
+                "JAVA_HOME": "/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home"
+            },
+            "args": [
+                "--dart-define=ENFORCE_CONSTRAINTS=true"
+            ]
+        },
+        {
+            "name": "app_estacionamento (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile",
+            "env": {
+                "JAVA_HOME": "/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home"
+            },
+            "args": [
+                "--dart-define=ENFORCE_CONSTRAINTS=true"
+            ]
+        },
+        {
+            "name": "app_estacionamento (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release",
+            "env": {
+                "JAVA_HOME": "/Library/Java/JavaVirtualMachines/openjdk-17.jdk/Contents/Home"
+            },
+            "args": [
+                "--dart-define=ENFORCE_CONSTRAINTS=true"
+            ]
+        }
+    ]
+} 
