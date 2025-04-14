@@ -193,93 +193,103 @@ class _SaidaScreenState extends State<SaidaScreen> {
         decoration: const BoxDecoration(
           gradient: HomeTheme.backgroundGradient,
         ),
+        height: double.infinity,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: ResponsiveTheme.getResponsivePadding(context),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: ResponsiveTheme.isDesktop(context) ? 800 : double.infinity,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        'Registrar Saída',
-                        style: HomeTheme.titleStyle.copyWith(
-                          fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                      ElevatedButton.icon(
-                        onPressed: _isLoading ? null : _uploadPDF,
-                        style: FormTheme.elevatedButtonStyle,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.upload_file),
-                        label: Text(
-                          _isLoading ? 'Processando...' : 'Upload do Ticket (PDF)',
-                          style: TextStyle(
-                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
-                      TextFormField(
-                        controller: _placaController,
-                        decoration: FormTheme.inputDecoration(
-                          labelText: 'Placa do Veículo',
-                          hintText: 'ABC-1234 ou ABC1D23',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Informe a placa do veículo';
-                          }
-                          final regex = RegExp(
-                            r'^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$',
-                          );
-                          if (!regex.hasMatch(value)) {
-                            return 'Placa inválida';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
-                      TextFormField(
-                        controller: _codigoController,
-                        decoration: FormTheme.inputDecoration(
-                          labelText: 'Código do Ticket',
-                          hintText: 'Digite o código do ticket',
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Informe o código do ticket';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                      ElevatedButton(
-                        onPressed: _registrarSaida,
-                        style: FormTheme.elevatedButtonStyle,
-                        child: Text(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - 
+                          MediaQuery.of(context).padding.top - 
+                          MediaQuery.of(context).padding.bottom - 
+                          kToolbarHeight,
+              ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: ResponsiveTheme.isDesktop(context) ? 800 : double.infinity,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
                           'Registrar Saída',
-                          style: TextStyle(
-                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                          style: HomeTheme.titleStyle.copyWith(
+                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
+                        ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _uploadPDF,
+                          style: FormTheme.elevatedButtonStyle,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.upload_file),
+                          label: Text(
+                            _isLoading ? 'Processando...' : 'Upload do Ticket (PDF)',
+                            style: TextStyle(
+                              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                        TextFormField(
+                          controller: _placaController,
+                          decoration: FormTheme.inputDecoration(
+                            labelText: 'Placa do Veículo',
+                            hintText: 'ABC-1234 ou ABC1D23',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Informe a placa do veículo';
+                            }
+                            final regex = RegExp(
+                              r'^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$',
+                            );
+                            if (!regex.hasMatch(value)) {
+                              return 'Placa inválida';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                        TextFormField(
+                          controller: _codigoController,
+                          decoration: FormTheme.inputDecoration(
+                            labelText: 'Código do Ticket',
+                            hintText: 'Digite o código do ticket',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Informe o código do ticket';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
+                        ElevatedButton(
+                          onPressed: _registrarSaida,
+                          style: FormTheme.elevatedButtonStyle,
+                          child: Text(
+                            'Registrar Saída',
+                            style: TextStyle(
+                              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

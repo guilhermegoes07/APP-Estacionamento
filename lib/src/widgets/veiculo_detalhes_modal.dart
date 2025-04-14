@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../theme/home_theme.dart';
 import '../theme/responsive_theme.dart';
 import '../models/veiculo.dart';
+import '../services/estacionamento_service.dart';
+import 'package:provider/provider.dart';
 import 'dart:io';
 
 class VeiculoDetalhesModal extends StatelessWidget {
@@ -11,6 +13,32 @@ class VeiculoDetalhesModal extends StatelessWidget {
     Key? key,
     required this.veiculo,
   }) : super(key: key);
+
+  Future<void> _registrarSaida(BuildContext context) async {
+    try {
+      final service = Provider.of<EstacionamentoService>(context, listen: false);
+      await service.registrarSaida(veiculo.placa);
+      
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Fecha o modal
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saída registrada com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao registrar saída: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +106,29 @@ class VeiculoDetalhesModal extends StatelessWidget {
                 if (veiculo.fotoVeiculo != null)
                   _buildImageContainer(context, 'Foto do Veículo', veiculo.fotoVeiculo!),
               ],
+              SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 2),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _registrarSaida(context),
+                  icon: const Icon(Icons.exit_to_app),
+                  label: Text(
+                    'Registrar Saída',
+                    style: TextStyle(
+                      fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: EdgeInsets.symmetric(
+                      vertical: ResponsiveTheme.getResponsiveSpacing(context),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

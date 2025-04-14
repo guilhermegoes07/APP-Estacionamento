@@ -50,12 +50,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: SafeArea(
+          bottom: false,
           child: Column(
             children: [
               _buildHeader(context),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: ResponsiveTheme.getResponsivePadding(context),
+                  padding: EdgeInsets.only(
+                    left: ResponsiveTheme.getResponsiveSpacing(context),
+                    right: ResponsiveTheme.getResponsiveSpacing(context),
+                    top: ResponsiveTheme.getResponsiveSpacing(context),
+                    bottom: ResponsiveTheme.getResponsiveSpacing(context) * 4,
+                  ),
                   child: Column(
                     children: [
                       ShimmerEffect(
@@ -77,12 +83,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         isLoading: _isLoading,
                         child: _buildVehiclesList(context),
                       ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
                     ],
                   ),
                 ),
               ),
-              _buildFooter(context),
+              SafeArea(
+                top: false,
+                child: _buildFooter(context),
+              ),
             ],
           ),
         ),

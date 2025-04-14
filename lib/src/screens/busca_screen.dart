@@ -35,54 +35,64 @@ class _BuscaScreenState extends State<BuscaScreen> {
         decoration: const BoxDecoration(
           gradient: HomeTheme.backgroundGradient,
         ),
+        height: double.infinity,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: ResponsiveTheme.getResponsivePadding(context),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: ResponsiveTheme.isDesktop(context) ? 800 : double.infinity,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextFormField(
-                        controller: _placaController,
-                        decoration: FormTheme.inputDecoration(
-                          labelText: 'Placa do Veículo',
-                          hintText: 'ABC-1234 ou ABC1D23',
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - 
+                          MediaQuery.of(context).padding.top - 
+                          MediaQuery.of(context).padding.bottom - 
+                          kToolbarHeight,
+              ),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: ResponsiveTheme.isDesktop(context) ? 800 : double.infinity,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextFormField(
+                          controller: _placaController,
+                          decoration: FormTheme.inputDecoration(
+                            labelText: 'Placa do Veículo',
+                            hintText: 'ABC-1234 ou ABC1D23',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Informe a placa do veículo';
+                            }
+                            final regex = RegExp(
+                              r'^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$',
+                            );
+                            if (!regex.hasMatch(value)) {
+                              return 'Placa inválida';
+                            }
+                            return null;
+                          },
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Informe a placa do veículo';
-                          }
-                          final regex = RegExp(
-                            r'^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$',
-                          );
-                          if (!regex.hasMatch(value)) {
-                            return 'Placa inválida';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                      ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            // TODO: Implementar busca
-                          }
-                        },
-                        style: FormTheme.elevatedButtonStyle,
-                        child: Text(
-                          'Buscar',
-                          style: TextStyle(
-                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (_formKey.currentState!.validate()) {
+                              // TODO: Implementar busca
+                            }
+                          },
+                          style: FormTheme.elevatedButtonStyle,
+                          child: Text(
+                            'Buscar',
+                            style: TextStyle(
+                              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
