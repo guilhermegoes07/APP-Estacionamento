@@ -8,6 +8,8 @@ import 'entrada_screen.dart';
 import 'saida_screen.dart';
 import 'busca_screen.dart';
 import 'relatorio_screen.dart';
+import 'configuracoes_screen.dart';
+import '../widgets/veiculo_detalhes_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -70,6 +72,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         isLoading: _isLoading,
                         child: _buildDailyReport(context),
                       ),
+                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                      ShimmerEffect(
+                        isLoading: _isLoading,
+                        child: _buildVehiclesList(context),
+                      ),
+                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
                     ],
                   ),
                 ),
@@ -113,7 +121,11 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // TODO: Implementar tela de configurações
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ConfiguracoesScreen(),
+                ),
+              );
             },
           ),
         ],
@@ -124,6 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildStatusCard(BuildContext context) {
     return Consumer<EstacionamentoService>(
       builder: (context, service, child) {
+        final estatisticas = service.getEstatisticas();
         return Card(
           elevation: 8,
           shape: RoundedRectangleBorder(
@@ -172,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
                     Text(
-                      'Valor Arrecadado: R\$ ${service.totalArrecadado.toStringAsFixed(2)}',
+                      'Valor Arrecadado: R\$ ${estatisticas['arrecadacaoHoje'].toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
                         fontFamily: 'Poppins',
@@ -278,6 +291,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDailyReport(BuildContext context) {
     return Consumer<EstacionamentoService>(
       builder: (context, service, child) {
+        final estatisticas = service.getEstatisticas();
+        
         return Card(
           elevation: 4,
           shape: RoundedRectangleBorder(
@@ -314,21 +329,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildReportItem(
                       context,
                       label: 'Entradas',
-                      value: '10',
+                      value: '${estatisticas['ticketsHoje']}',
                       icon: Icons.login,
                       color: Colors.blue,
                     ),
                     _buildReportItem(
                       context,
-                      label: 'Saídas',
-                      value: '8',
-                      icon: Icons.logout,
+                      label: 'Veículos',
+                      value: '${estatisticas['veiculosNoPatio']}',
+                      icon: Icons.directions_car,
                       color: Colors.green,
                     ),
                     _buildReportItem(
                       context,
                       label: 'Total',
-                      value: 'R\$ 250,00',
+                      value: 'R\$ ${estatisticas['arrecadacaoHoje'].toStringAsFixed(2)}',
                       icon: Icons.attach_money,
                       color: Colors.orange,
                     ),
@@ -378,45 +393,159 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildVehiclesList(BuildContext context) {
+    return Consumer<EstacionamentoService>(
+      builder: (context, service, child) {
+        return Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: ResponsiveTheme.getResponsivePadding(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.directions_car,
+                      size: ResponsiveTheme.getResponsiveIconSize(context),
+                      color: HomeTheme.primaryColor,
+                    ),
+                    SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
+                    Text(
+                      'Veículos no Pátio',
+                      style: TextStyle(
+                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        color: HomeTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(context).size.height * 0.4,
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: service.veiculosNoPatio.length,
+                    itemBuilder: (context, index) {
+                      final veiculo = service.veiculosNoPatio[index];
+                      return Card(
+                        margin: EdgeInsets.only(
+                          bottom: ResponsiveTheme.getResponsiveSpacing(context),
+                        ),
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => VeiculoDetalhesModal(veiculo: veiculo),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: EdgeInsets.all(ResponsiveTheme.getResponsiveSpacing(context)),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.directions_car,
+                                  size: ResponsiveTheme.getResponsiveIconSize(context),
+                                  color: HomeTheme.primaryColor,
+                                ),
+                                SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        veiculo.placa,
+                                        style: TextStyle(
+                                          fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Entrada: ${veiculo.horaEntrada.hour}:${veiculo.horaEntrada.minute}',
+                                        style: TextStyle(
+                                          fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildFooter(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        vertical: ResponsiveTheme.getResponsiveSpacing(context),
-        horizontal: ResponsiveTheme.getResponsiveSpacing(context) * 2,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
+    return Consumer<EstacionamentoService>(
+      builder: (context, service, child) {
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            vertical: ResponsiveTheme.getResponsiveSpacing(context),
+            horizontal: ResponsiveTheme.getResponsiveSpacing(context) * 2,
           ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'CNPJ: 00.000.000/0001-00',
-            style: TextStyle(
-              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
-              fontFamily: 'Poppins',
-              color: Colors.grey.shade600,
-            ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
           ),
-          SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) / 2),
-          Text(
-            'v1.0.0',
-            style: TextStyle(
-              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
-              fontFamily: 'Poppins',
-              color: Colors.grey.shade600,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'CNPJ: ${service.cnpjEstacionamento}',
+                style: TextStyle(
+                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
+                  fontFamily: 'Poppins',
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) / 2),
+              Text(
+                'v1.0.0',
+                style: TextStyle(
+                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 12),
+                  fontFamily: 'Poppins',
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 } 
