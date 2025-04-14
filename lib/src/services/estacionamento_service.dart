@@ -14,23 +14,33 @@ class EstacionamentoService with ChangeNotifier {
   final List<Ticket> _tickets = [];
   final String cnpjEstacionamento;
   final String nomeEstacionamento;
+  final String endereco;
+  final String cidadeEstadoCep;
+  double _valorHora;
 
   EstacionamentoService({
     required this.cnpjEstacionamento,
     required this.nomeEstacionamento,
-  });
+    required this.endereco,
+    required this.cidadeEstadoCep,
+    required double valorHora,
+  }) : _valorHora = valorHora;
 
   List<Veiculo> get veiculosNoPatio => _veiculosNoPatio;
-  double get totalArrecadado => _totalArrecadado;
+  double get totalArrecadado {
+    final hoje = DateTime.now();
+    return _pagamentosBox.values
+        .where((pagamento) => 
+            pagamento.data.year == hoje.year &&
+            pagamento.data.month == hoje.month &&
+            pagamento.data.day == hoje.day)
+        .fold(0.0, (sum, pagamento) => sum + pagamento.valor);
+  }
   List<Ticket> get tickets => _tickets;
+  double get valorHora => _valorHora;
 
   Future<void> initDatabase() async {
     await Hive.initFlutter();
-    
-    Hive.registerAdapter(VeiculoAdapter());
-    Hive.registerAdapter(FormaPagamentoAdapter());
-    Hive.registerAdapter(PagamentoAdapter());
-    Hive.registerAdapter(TicketAdapter());
 
     _veiculosBox = await Hive.openBox<Veiculo>('veiculos');
     _pagamentosBox = await Hive.openBox<Pagamento>('pagamentos');
@@ -138,6 +148,8 @@ class EstacionamentoService with ChangeNotifier {
     );
 
     await _veiculosBox.add(veiculo);
+    _veiculosNoPatio.add(veiculo);
+    notifyListeners();
 
     final ticket = Ticket(
       veiculo: placa,
@@ -203,15 +215,24 @@ class EstacionamentoService with ChangeNotifier {
       t.isEntrada
     ).toList();
 
+    final ticketsTotal = _ticketsBox.values.length;
+
     final arrecadacaoHoje = ticketsHoje.fold<double>(
       0, 
       (sum, t) => sum + t.pagamento.valor
+    );
+
+    final arrecadacaoTotal = _pagamentosBox.values.fold<double>(
+      0,
+      (sum, p) => sum + p.valor
     );
 
     return {
       'veiculosNoPatio': veiculosNoPatio,
       'arrecadacaoHoje': arrecadacaoHoje,
       'ticketsHoje': ticketsHoje.length,
+      'arrecadacaoTotal': arrecadacaoTotal,
+      'ticketsTotal': ticketsTotal,
     };
   }
 
@@ -264,6 +285,30 @@ class EstacionamentoService with ChangeNotifier {
     } catch (e) {
       print('Erro ao registrar entrada/saída: $e');
       return false;
+    }
+  }
+
+  // Métodos para configurações
+  Future<void> atualizarValorHora(double novoValor) async {
+    _valorHora = novoValor;
+    notifyListeners();
+  }
+
+  double calcularValorTotal(int horas) {
+    return _valorHora * horas;
+  }
+
+  // Método para verificar e remover veículos com tempo expirado
+  Future<void> verificarTemposExpirados() async {
+    final agora = DateTime.now();
+    final veiculosExpirados = _veiculosNoPatio.where((veiculo) {
+      if (veiculo.tempoPago == null) return false;
+      final tempoRestante = veiculo.tempoPago! - agora.difference(veiculo.horaEntrada).inHours;
+      return tempoRestante <= 0;
+    }).toList();
+
+    for (final veiculo in veiculosExpirados) {
+      await registrarSaidaVeiculo(veiculo.placa);
     }
   }
 } 
