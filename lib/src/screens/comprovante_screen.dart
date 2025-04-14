@@ -6,6 +6,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:open_file/open_file.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'dart:typed_data';
@@ -178,19 +180,48 @@ class ComprovanteScreen extends StatelessWidget {
         ),
       );
 
-      // Salvar o PDF usando o método de compartilhamento
+      // Salvar o PDF
       final bytes = await pdf.save();
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename: '$ticketId.pdf',
-      );
-
-      // Mostrar mensagem de sucesso
+      
+      // Obter o diretório de downloads
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/$ticketId.pdf');
+      
+      // Salvar o arquivo
+      await file.writeAsBytes(bytes);
+      
+      // Iniciar o download
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('PDF gerado com sucesso!'),
-            backgroundColor: Colors.green,
+        // Mostrar diálogo de sucesso com opção de abrir o arquivo
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('PDF Gerado com Sucesso'),
+            content: const Text('O arquivo foi salvo com sucesso. Deseja abrir o arquivo?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Não'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  // Abrir o arquivo
+                  final result = await OpenFile.open(file.path);
+                  if (result.type != ResultType.done) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro ao abrir arquivo: ${result.message}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Sim'),
+              ),
+            ],
           ),
         );
       }
