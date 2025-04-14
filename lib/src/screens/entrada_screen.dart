@@ -473,7 +473,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
                                       decoration: FormTheme.inputDecoration(
                                         labelText: 'Parcelas',
                                       ),
-                                      items: List.generate(12, (index) {
+                                      items: List.generate(2, (index) {
                                         return DropdownMenuItem(
                                           value: index + 1,
                                           child: Text(

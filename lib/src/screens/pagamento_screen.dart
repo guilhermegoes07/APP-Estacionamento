@@ -22,6 +22,7 @@ class PagamentoScreen extends StatefulWidget {
 class _PagamentoScreenState extends State<PagamentoScreen> {
   int _horasSelecionadas = 1;
   FormaPagamento _formaPagamento = FormaPagamento.dinheiro;
+  int _parcelas = 1;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -138,6 +139,28 @@ class _PagamentoScreenState extends State<PagamentoScreen> {
                                 }
                               },
                             ),
+                            if (_formaPagamento == FormaPagamento.credito) ...[
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<int>(
+                                value: 1,
+                                items: List.generate(2, (index) {
+                                  return DropdownMenuItem(
+                                    value: index + 1,
+                                    child: Text('${index + 1}x'),
+                                  );
+                                }),
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() {
+                                      _parcelas = value;
+                                    });
+                                  }
+                                },
+                                decoration: const InputDecoration(
+                                  labelText: 'Parcelas',
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -178,7 +201,7 @@ class _PagamentoScreenState extends State<PagamentoScreen> {
                           final pagamento = Pagamento(
                             valor: valorTotal,
                             formaPagamento: _formaPagamento,
-                            parcelas: 1,
+                            parcelas: _parcelas,
                             dataHora: DateTime.now(),
                             autorizado: true,
                             data: DateTime.now(),
@@ -194,8 +217,9 @@ class _PagamentoScreenState extends State<PagamentoScreen> {
                               MaterialPageRoute(
                                 builder: (context) => ComprovanteScreen(
                                   pagamento: pagamento,
-                                  veiculo: widget.veiculo,
+                                  veiculo: widget.veiculo.placa,
                                   horasContratadas: _horasSelecionadas,
+                                  ticketId: pagamento.codigoTransacao,
                                 ),
                               ),
                             );
