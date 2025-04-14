@@ -31,6 +31,9 @@ class Ticket {
   @HiveField(7)
   final String codigoTransacao;
 
+  @HiveField(8)
+  final String qrCode;
+
   Ticket({
     required this.codigo,
     required this.veiculo,
@@ -38,6 +41,7 @@ class Ticket {
     required this.cnpjEstacionamento,
     required this.nomeEstacionamento,
     required this.isEntrada,
+    required this.qrCode,
   }) : dataHora = DateTime.now(),
        codigoTransacao = Uuid().v4();
 

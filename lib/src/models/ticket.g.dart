@@ -23,13 +23,14 @@ class TicketAdapter extends TypeAdapter<Ticket> {
       cnpjEstacionamento: fields[3] as String,
       nomeEstacionamento: fields[4] as String,
       isEntrada: fields[5] as bool,
+      qrCode: fields[8] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, Ticket obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.codigo)
       ..writeByte(1)
@@ -45,7 +46,9 @@ class TicketAdapter extends TypeAdapter<Ticket> {
       ..writeByte(6)
       ..write(obj.dataHora)
       ..writeByte(7)
-      ..write(obj.codigoTransacao);
+      ..write(obj.codigoTransacao)
+      ..writeByte(8)
+      ..write(obj.qrCode);
   }
 
   @override
