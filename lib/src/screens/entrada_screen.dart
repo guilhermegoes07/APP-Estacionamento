@@ -268,36 +268,48 @@ class _EntradaScreenState extends State<EntradaScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _tirarFoto(true),
-                              icon: Icon(
-                                Icons.camera_alt,
-                                size: ResponsiveTheme.getResponsiveIconSize(context),
-                              ),
-                              label: Text(
-                                'Foto da Placa',
-                                style: TextStyle(
-                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                            child: Container(
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: () => _tirarFoto(true),
+                                icon: Icon(
+                                  Icons.camera_alt,
+                                  size: ResponsiveTheme.getResponsiveIconSize(context),
                                 ),
+                                label: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'Foto da Placa',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                    ),
+                                  ),
+                                ),
+                                style: FormTheme.elevatedButtonStyle,
                               ),
-                              style: FormTheme.elevatedButtonStyle,
                             ),
                           ),
                           SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context) * 2),
                           Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: () => _tirarFoto(false),
-                              icon: Icon(
-                                Icons.camera_alt,
-                                size: ResponsiveTheme.getResponsiveIconSize(context),
-                              ),
-                              label: Text(
-                                'Foto do Veículo',
-                                style: TextStyle(
-                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                            child: Container(
+                              height: 48,
+                              child: ElevatedButton.icon(
+                                onPressed: () => _tirarFoto(false),
+                                icon: Icon(
+                                  Icons.camera_alt,
+                                  size: ResponsiveTheme.getResponsiveIconSize(context),
                                 ),
+                                label: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    'Foto do Veículo',
+                                    style: TextStyle(
+                                      fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                    ),
+                                  ),
+                                ),
+                                style: FormTheme.elevatedButtonStyle,
                               ),
-                              style: FormTheme.elevatedButtonStyle,
                             ),
                           ),
                         ],
