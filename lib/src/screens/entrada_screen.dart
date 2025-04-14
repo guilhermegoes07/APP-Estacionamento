@@ -182,15 +182,15 @@ class _EntradaScreenState extends State<EntradaScreen> {
       );
 
       if (mounted) {
-        Navigator.push(
+        Navigator.pushNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => ComprovanteScreen(
-              pagamento: pagamento,
-              veiculo: veiculo,
-              horasContratadas: horas,
-            ),
-          ),
+          '/comprovante',
+          arguments: {
+            'pagamento': pagamento,
+            'veiculo': veiculo.placa,
+            'horasContratadas': horas,
+            'ticketId': ticket.codigo,
+          },
         );
       }
     } catch (e) {

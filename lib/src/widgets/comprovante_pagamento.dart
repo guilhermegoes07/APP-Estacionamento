@@ -15,6 +15,7 @@ class ComprovantePagamento extends StatelessWidget {
   final String nsu;
   final List<Map<String, dynamic>> produtos;
   final String qrCodeData;
+  final String ticketId;
 
   const ComprovantePagamento({
     Key? key,
@@ -31,6 +32,7 @@ class ComprovantePagamento extends StatelessWidget {
     required this.nsu,
     required this.produtos,
     required this.qrCodeData,
+    required this.ticketId,
   }) : super(key: key);
 
   @override
@@ -89,6 +91,42 @@ class ComprovantePagamento extends StatelessWidget {
                 fontSize: baseFontSize,
                 height: 1.2,
               ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              '--------------------------------',
+              style: TextStyle(
+                fontFamily: 'Courier',
+                fontSize: baseFontSize,
+                height: 1.2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // QR Code e ID do Ticket
+          Center(
+            child: Column(
+              children: [
+                QrImageView(
+                  data: qrCodeData,
+                  version: QrVersions.auto,
+                  size: qrCodeSize,
+                  backgroundColor: Colors.white,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'ID: $ticketId',
+                  style: TextStyle(
+                    fontFamily: 'Courier',
+                    fontSize: baseFontSize,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -263,16 +301,6 @@ class ComprovantePagamento extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // QR Code
-          Center(
-            child: QrImageView(
-              data: qrCodeData,
-              version: QrVersions.auto,
-              size: qrCodeSize,
-              backgroundColor: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 16),
           Center(
             child: Text(
               'COMPROVANTE DE PAGAMENTO',
@@ -280,17 +308,6 @@ class ComprovantePagamento extends StatelessWidget {
                 fontFamily: 'Courier',
                 fontSize: baseFontSize,
                 fontWeight: FontWeight.bold,
-                height: 1.2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              'HOMOLOGADO',
-              style: TextStyle(
-                fontFamily: 'Courier',
-                fontSize: baseFontSize,
                 height: 1.2,
               ),
             ),
