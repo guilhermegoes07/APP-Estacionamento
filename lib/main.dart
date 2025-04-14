@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'src/screens/home_screen.dart';
+import 'src/screens/entrada_screen.dart';
+import 'src/screens/saida_screen.dart';
+import 'src/screens/comprovante_screen.dart';
 import 'src/services/estacionamento_service.dart';
 import 'src/providers/vehicle_provider.dart';
 import 'src/theme/app_theme.dart';
@@ -57,7 +60,21 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Estacionamento App',
       theme: AppTheme.theme,
-      home: const HomeScreen(),
+      initialRoute: '/home',
+      routes: {
+        '/home': (context) => const HomeScreen(),
+        '/entrada': (context) => const EntradaScreen(),
+        '/saida': (context) => const SaidaScreen(),
+        '/comprovante': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return ComprovanteScreen(
+            pagamento: args['pagamento'] as Pagamento,
+            veiculo: args['veiculo'] as String,
+            horasContratadas: args['horasContratadas'] as int,
+            ticketId: args['ticketId'] as String,
+          );
+        },
+      },
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         return MediaQuery(
