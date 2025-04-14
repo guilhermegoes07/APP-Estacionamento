@@ -23,16 +23,33 @@ class EntradaScreen extends StatefulWidget {
 class _EntradaScreenState extends State<EntradaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _placaController = TextEditingController();
+  final _horasController = TextEditingController(text: '1');
   File? _fotoPlaca;
   File? _fotoVeiculo;
   FormaPagamento _formaPagamento = FormaPagamento.dinheiro;
   int _parcelas = 1;
   bool _pagamentoAutorizado = false;
+  double _valorTotal = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _calcularTotal();
+  }
 
   @override
   void dispose() {
     _placaController.dispose();
+    _horasController.dispose();
     super.dispose();
+  }
+
+  void _calcularTotal() {
+    final service = Provider.of<EstacionamentoService>(context, listen: false);
+    final horas = int.tryParse(_horasController.text) ?? 1;
+    setState(() {
+      _valorTotal = service.calcularValorTotal(horas);
+    });
   }
 
   Future<void> _tirarFoto(bool isPlaca) async {
@@ -55,6 +72,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
       setState(() {
         _pagamentoAutorizado = true;
       });
+      _registrarEntrada();
       return;
     }
 
@@ -90,6 +108,7 @@ class _EntradaScreenState extends State<EntradaScreen> {
                       _pagamentoAutorizado = true;
                     });
                     Navigator.pop(context);
+                    _registrarEntrada();
                   },
                   style: FormTheme.elevatedButtonStyle,
                   child: Text(
@@ -133,42 +152,51 @@ class _EntradaScreenState extends State<EntradaScreen> {
       return;
     }
 
-    final service = Provider.of<EstacionamentoService>(context, listen: false);
-    final veiculo = await service.registrarEntrada(
-      _placaController.text,
-      isEntrada: true,
-    );
-
-    if (veiculo) {
+    try {
+      final service = Provider.of<EstacionamentoService>(context, listen: false);
+      final horas = int.parse(_horasController.text);
+      
       final pagamento = Pagamento(
-        valor: 0,
-        formaPagamento: FormaPagamento.dinheiro,
-        parcelas: 1,
+        valor: _valorTotal,
+        formaPagamento: _formaPagamento,
+        parcelas: _parcelas,
         dataHora: DateTime.now(),
         autorizado: true,
+        data: DateTime.now(),
       );
 
-      final ticket = Ticket(
-        codigo: Uuid().v4(),
-        veiculo: _placaController.text,
+      final veiculo = Veiculo(
+        placa: _placaController.text,
+        horaEntrada: DateTime.now(),
+        fotoPlaca: _fotoPlaca?.path,
+        fotoVeiculo: _fotoVeiculo?.path,
+        isNoPatio: true,
+        tempoPago: horas,
+      );
+
+      final ticket = await service.registrarEntradaComTicket(
+        placa: veiculo.placa,
         pagamento: pagamento,
-        cnpjEstacionamento: '12.345.678/0001-90',
-        nomeEstacionamento: 'Estacionamento Exemplo',
-        isEntrada: true,
+        fotoPlaca: veiculo.fotoPlaca,
+        fotoVeiculo: veiculo.fotoVeiculo,
       );
 
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ComprovanteScreen(ticket: ticket),
+            builder: (context) => ComprovanteScreen(
+              pagamento: pagamento,
+              veiculo: veiculo,
+              horasContratadas: horas,
+            ),
           ),
         );
       }
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veículo já está no pátio'),
+        SnackBar(
+          content: Text(e.toString()),
           backgroundColor: Colors.red,
         ),
       );
@@ -177,6 +205,8 @@ class _EntradaScreenState extends State<EntradaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final service = Provider.of<EstacionamentoService>(context);
+    
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -342,22 +372,92 @@ class _EntradaScreenState extends State<EntradaScreen> {
                         ),
                       ],
                       SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Card(
+                              child: Padding(
+                                padding: EdgeInsets.all(ResponsiveTheme.getResponsiveSpacing(context)),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Horas',
+                                      style: TextStyle(
+                                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.remove),
+                                          onPressed: () {
+                                            final horas = int.tryParse(_horasController.text) ?? 1;
+                                            if (horas > 1) {
+                                              _horasController.text = (horas - 1).toString();
+                                              _calcularTotal();
+                                            }
+                                          },
+                                        ),
+                                        Text(
+                                          _horasController.text,
+                                          style: TextStyle(
+                                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.add),
+                                          onPressed: () {
+                                            final horas = int.tryParse(_horasController.text) ?? 1;
+                                            _horasController.text = (horas + 1).toString();
+                                            _calcularTotal();
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+                      Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(ResponsiveTheme.getResponsiveSpacing(context)),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Valor Total',
+                                style: TextStyle(
+                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'R\$ ${_valorTotal.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _processarPagamento,
                         style: FormTheme.elevatedButtonStyle,
                         child: Text(
                           'Processar Pagamento',
-                          style: TextStyle(
-                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 2),
-                      ElevatedButton(
-                        onPressed: _registrarEntrada,
-                        style: FormTheme.elevatedButtonStyle,
-                        child: Text(
-                          'Registrar Entrada',
                           style: TextStyle(
                             fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
                           ),

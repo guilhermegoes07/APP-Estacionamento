@@ -1,85 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/estacionamento_service.dart';
+import '../models/veiculo.dart';
+import '../models/pagamento.dart';
+import 'comprovante_screen.dart';
 import '../theme/home_theme.dart';
 import '../theme/responsive_theme.dart';
-import '../theme/form_theme.dart';
-import '../models/pagamento.dart';
-import '../services/qr_code_service.dart';
-import 'comprovante_screen.dart';
 
 class PagamentoScreen extends StatefulWidget {
-  final double valor;
-  final Function(Pagamento) onPagamentoConfirmado;
+  final Veiculo veiculo;
 
   const PagamentoScreen({
-    super.key,
-    required this.valor,
-    required this.onPagamentoConfirmado,
-  });
+    Key? key,
+    required this.veiculo,
+  }) : super(key: key);
 
   @override
   State<PagamentoScreen> createState() => _PagamentoScreenState();
 }
 
 class _PagamentoScreenState extends State<PagamentoScreen> {
+  int _horasSelecionadas = 1;
   FormaPagamento _formaPagamento = FormaPagamento.dinheiro;
-  int _parcelas = 1;
-  bool _isLoading = false;
-  bool _pagamentoAutorizado = false;
-
-  Future<void> _simularPagamento() async {
-    setState(() => _isLoading = true);
-
-    // Simula o processamento do pagamento
-    await Future.delayed(const Duration(seconds: 2));
-
-    final pagamento = Pagamento(
-      valor: widget.valor,
-      formaPagamento: _formaPagamento,
-      parcelas: _parcelas,
-      dataHora: DateTime.now(),
-      autorizado: _pagamentoAutorizado,
-    );
-
-    widget.onPagamentoConfirmado(pagamento);
-  }
-
-  Future<void> _mostrarDialogAutorizacao() async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Autorização de Pagamento'),
-        content: const Text('Deseja autorizar o pagamento?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Negar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Autorizar'),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null) {
-      setState(() => _pagamentoAutorizado = result);
-      if (result) {
-        await _simularPagamento();
-      }
-    }
-  }
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
+    final estacionamentoService = Provider.of<EstacionamentoService>(context);
+    final valorTotal = estacionamentoService.calcularValorTotal(_horasSelecionadas);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Pagamento',
-          style: TextStyle(
-            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
-          ),
-        ),
+        title: const Text('Pagamento'),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -98,159 +50,159 @@ class _PagamentoScreenState extends State<PagamentoScreen> {
                   children: [
                     Card(
                       child: Padding(
-                        padding: ResponsiveTheme.getResponsivePadding(context),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Valor Total',
-                              style: TextStyle(
-                                fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                                color: Colors.grey,
-                              ),
+                              'Veículo: ${widget.veiculo.placa}',
+                              style: Theme.of(context).textTheme.titleLarge,
                             ),
+                            const SizedBox(height: 8),
                             Text(
-                              'R\$ ${widget.valor.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
-                                fontWeight: FontWeight.bold,
-                              ),
+                              'Valor da Hora: R\$ ${estacionamentoService.valorHora.toStringAsFixed(2)}',
+                              style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           ],
                         ),
                       ),
                     ),
-                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 2),
+                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
                     Card(
                       child: Padding(
-                        padding: ResponsiveTheme.getResponsivePadding(context),
+                        padding: const EdgeInsets.all(16.0),
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Forma de Pagamento',
-                              style: TextStyle(
-                                fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                                fontWeight: FontWeight.bold,
-                              ),
+                              'Selecione o número de horas:',
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
-                            SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-                            RadioListTile<FormaPagamento>(
-                              title: const Text('Dinheiro'),
-                              value: FormaPagamento.dinheiro,
-                              groupValue: _formaPagamento,
-                              onChanged: (value) {
-                                setState(() => _formaPagamento = value!);
-                              },
-                            ),
-                            RadioListTile<FormaPagamento>(
-                              title: const Text('PIX'),
-                              value: FormaPagamento.pix,
-                              groupValue: _formaPagamento,
-                              onChanged: (value) {
-                                setState(() => _formaPagamento = value!);
-                              },
-                            ),
-                            RadioListTile<FormaPagamento>(
-                              title: const Text('Cartão de Débito'),
-                              value: FormaPagamento.debito,
-                              groupValue: _formaPagamento,
-                              onChanged: (value) {
-                                setState(() => _formaPagamento = value!);
-                              },
-                            ),
-                            RadioListTile<FormaPagamento>(
-                              title: const Text('Cartão de Crédito'),
-                              value: FormaPagamento.credito,
-                              groupValue: _formaPagamento,
-                              onChanged: (value) {
-                                setState(() => _formaPagamento = value!);
-                              },
-                            ),
-                            if (_formaPagamento == FormaPagamento.credito) ...[
-                              SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-                              Text(
-                                'Parcelas',
-                                style: TextStyle(
-                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                                  fontWeight: FontWeight.bold,
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.remove),
+                                  onPressed: () {
+                                    if (_horasSelecionadas > 1) {
+                                      setState(() {
+                                        _horasSelecionadas--;
+                                      });
+                                    }
+                                  },
                                 ),
-                              ),
-                              DropdownButtonFormField<int>(
-                                value: _parcelas,
-                                items: [1, 2].map((value) {
-                                  return DropdownMenuItem<int>(
-                                    value: value,
-                                    child: Text('$value'),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() => _parcelas = value!);
-                                },
-                              ),
-                            ],
+                                Text(
+                                  '$_horasSelecionadas',
+                                  style: Theme.of(context).textTheme.headlineMedium,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.add),
+                                  onPressed: () {
+                                    setState(() {
+                                      _horasSelecionadas++;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
                     ),
-                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                    if (_formaPagamento == FormaPagamento.pix) ...[
-                      Card(
-                        child: Padding(
-                          padding: ResponsiveTheme.getResponsivePadding(context),
-                          child: Column(
-                            children: [
-                              Text(
-                                'QR Code PIX',
-                                style: TextStyle(
-                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
-                              FutureBuilder<String>(
-                                future: QrCodeService.gerarQrCodePix(
-                                  valor: widget.valor,
-                                  chavePix: '123.456.789-00',
-                                  nomeBeneficiario: 'Estacionamento',
-                                ),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return const CircularProgressIndicator();
-                                  }
-                                  if (snapshot.hasError) {
-                                    return Text('Erro: ${snapshot.error}');
-                                  }
-                                  return Image.network(snapshot.data!);
-                                },
-                              ),
-                            ],
-                          ),
+                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Forma de Pagamento:',
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<FormaPagamento>(
+                              value: _formaPagamento,
+                              items: FormaPagamento.values.map((forma) {
+                                return DropdownMenuItem(
+                                  value: forma,
+                                  child: Text(forma.toString().split('.').last),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _formaPagamento = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 2),
-                    ],
-                    ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              if (_formaPagamento == FormaPagamento.dinheiro) {
-                                _simularPagamento();
-                              } else {
-                                _mostrarDialogAutorizacao();
-                              }
-                            },
-                      style: FormTheme.elevatedButtonStyle,
-                      child: _isLoading
-                          ? const CircularProgressIndicator()
-                          : Text(
-                              _formaPagamento == FormaPagamento.dinheiro
-                                  ? 'Confirmar Pagamento'
-                                  : 'Simular Pagamento',
-                              style: TextStyle(
-                                fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                              ),
+                    ),
+                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Resumo do Pagamento',
+                              style: Theme.of(context).textTheme.titleMedium,
                             ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Valor Total:',
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                ),
+                                Text(
+                                  'R\$ ${valorTotal.toStringAsFixed(2)}',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (_formKey.currentState!.validate()) {
+                          final pagamento = Pagamento(
+                            valor: valorTotal,
+                            formaPagamento: _formaPagamento,
+                            parcelas: 1,
+                            dataHora: DateTime.now(),
+                            autorizado: true,
+                            data: DateTime.now(),
+                          );
+
+                          await estacionamentoService.registrarPagamento(pagamento);
+                          widget.veiculo.tempoPago = _horasSelecionadas;
+                          await widget.veiculo.save();
+
+                          if (mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ComprovanteScreen(
+                                  pagamento: pagamento,
+                                  veiculo: widget.veiculo,
+                                  horasContratadas: _horasSelecionadas,
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      child: const Text('Confirmar Pagamento'),
                     ),
                   ],
                 ),
