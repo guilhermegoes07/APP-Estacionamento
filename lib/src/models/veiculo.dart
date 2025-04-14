@@ -22,6 +22,9 @@ class Veiculo {
   @HiveField(5)
   bool isNoPatio;
 
+  @HiveField(6)
+  int? tempoPago; // Tempo pago em horas
+
   Veiculo({
     required this.placa,
     required this.horaEntrada,
@@ -29,6 +32,7 @@ class Veiculo {
     this.fotoPlaca,
     this.fotoVeiculo,
     this.isNoPatio = true,
+    this.tempoPago,
   });
 
   static bool validarPlaca(String placa) {
@@ -66,5 +70,20 @@ class Veiculo {
   Future<void> save() async {
     final box = await Hive.openBox<Veiculo>('veiculos');
     await box.put(placa, this);
+  }
+
+  Future<void> delete() async {
+    final box = await Hive.openBox<Veiculo>('veiculos');
+    await box.delete(placa);
+  }
+
+  static Future<Veiculo?> getByPlaca(String placa) async {
+    final box = await Hive.openBox<Veiculo>('veiculos');
+    return box.get(placa);
+  }
+
+  static Future<List<Veiculo>> getAll() async {
+    final box = await Hive.openBox<Veiculo>('veiculos');
+    return box.values.toList();
   }
 } 

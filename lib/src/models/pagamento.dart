@@ -41,6 +41,9 @@ class Pagamento {
   @HiveField(7)
   final String codigoTransacao;
 
+  @HiveField(8)
+  final DateTime data;
+
   Pagamento({
     required this.valor,
     required this.formaPagamento,
@@ -49,6 +52,7 @@ class Pagamento {
     required this.autorizado,
     this.qrCodePix,
     this.comprovante,
+    required this.data,
   }) : codigoTransacao = Uuid().v4();
 
   double get valorParcela => valor / parcelas;
@@ -77,6 +81,7 @@ class Pagamento {
       'autorizado': autorizado,
       'qrCodePix': qrCodePix,
       'comprovante': comprovante,
+      'data': data.toIso8601String(),
     };
   }
 
@@ -89,6 +94,7 @@ class Pagamento {
       autorizado: map['autorizado'],
       qrCodePix: map['qrCodePix'],
       comprovante: map['comprovante'],
+      data: DateTime.parse(map['data']),
     );
   }
 } 

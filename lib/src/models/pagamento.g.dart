@@ -24,13 +24,14 @@ class PagamentoAdapter extends TypeAdapter<Pagamento> {
       autorizado: fields[4] as bool,
       qrCodePix: fields[5] as String?,
       comprovante: fields[6] as String?,
+      data: fields[8] as DateTime,
     );
   }
 
   @override
   void write(BinaryWriter writer, Pagamento obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.valor)
       ..writeByte(1)
@@ -46,7 +47,9 @@ class PagamentoAdapter extends TypeAdapter<Pagamento> {
       ..writeByte(6)
       ..write(obj.comprovante)
       ..writeByte(7)
-      ..write(obj.codigoTransacao);
+      ..write(obj.codigoTransacao)
+      ..writeByte(8)
+      ..write(obj.data);
   }
 
   @override
