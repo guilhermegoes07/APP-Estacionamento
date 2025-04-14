@@ -27,6 +27,12 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadData();
   }
 
+  String _formatarHora(DateTime data) {
+    final hora = data.hour.toString().padLeft(2, '0');
+    final minuto = data.minute.toString().padLeft(2, '0');
+    return '$hora:$minuto';
+  }
+
   Future<void> _loadData() async {
     // Simula um carregamento de dados
     await Future.delayed(const Duration(seconds: 1));
@@ -482,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         ),
                                       ),
                                       Text(
-                                        'Entrada: ${veiculo.horaEntrada.hour}:${veiculo.horaEntrada.minute}',
+                                        'Entrada: ${_formatarHora(veiculo.horaEntrada)}',
                                         style: TextStyle(
                                           fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
                                           color: Colors.grey,

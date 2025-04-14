@@ -25,6 +25,9 @@ class Veiculo {
   @HiveField(6)
   int? tempoPago; // Tempo pago em horas
 
+  @HiveField(7)
+  int totalPassagens; // Total de vezes que o veículo passou pelo pátio
+
   Veiculo({
     required this.placa,
     required this.horaEntrada,
@@ -33,6 +36,7 @@ class Veiculo {
     this.fotoVeiculo,
     this.isNoPatio = true,
     this.tempoPago,
+    this.totalPassagens = 1,
   });
 
   static bool validarPlaca(String placa) {

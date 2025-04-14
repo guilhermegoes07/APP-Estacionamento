@@ -12,6 +12,8 @@ import '../theme/responsive_theme.dart';
 import 'dart:io';
 import 'package:uuid/uuid.dart';
 import 'comprovante_screen.dart';
+import 'package:flutter/services.dart';
+import '../widgets/footer_widget.dart';
 
 class EntradaScreen extends StatefulWidget {
   const EntradaScreen({super.key});
@@ -35,13 +37,43 @@ class _EntradaScreenState extends State<EntradaScreen> {
   void initState() {
     super.initState();
     _calcularTotal();
+    _placaController.addListener(_formatarPlaca);
   }
 
   @override
   void dispose() {
+    _placaController.removeListener(_formatarPlaca);
     _placaController.dispose();
     _horasController.dispose();
     super.dispose();
+  }
+
+  void _formatarPlaca() {
+    final text = _placaController.text;
+    final cursorPosition = _placaController.selection.baseOffset;
+    
+    // Remove caracteres especiais e converte para maiúsculas
+    final cleanedText = text.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '').toUpperCase();
+    
+    String formattedText = cleanedText;
+    
+    // Verifica se é uma placa Mercosul (ABC1D23) ou modelo antigo (ABC1234)
+    if (cleanedText.length >= 4) {
+      if (RegExp(r'^[A-Z]{3}\d[A-Z]\d{2}$').hasMatch(cleanedText)) {
+        // Formato Mercosul
+        formattedText = cleanedText;
+      } else if (RegExp(r'^[A-Z]{3}\d{4}$').hasMatch(cleanedText)) {
+        // Formato antigo
+        formattedText = '${cleanedText.substring(0, 3)}-${cleanedText.substring(3)}';
+      }
+    }
+    
+    if (text != formattedText) {
+      _placaController.value = TextEditingValue(
+        text: formattedText,
+        selection: TextSelection.collapsed(offset: cursorPosition),
+      );
+    }
   }
 
   void _calcularTotal() {
@@ -247,6 +279,14 @@ class _EntradaScreenState extends State<EntradaScreen> {
           SnackBar(
             content: Text(e.toString()),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
+            ),
           ),
         );
       }
@@ -258,313 +298,335 @@ class _EntradaScreenState extends State<EntradaScreen> {
     final service = Provider.of<EstacionamentoService>(context);
     
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Registrar Entrada',
-          style: TextStyle(
-            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
-          ),
-        ),
-      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: HomeTheme.backgroundGradient,
         ),
         height: double.infinity,
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: ResponsiveTheme.getResponsivePadding(context),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - 
-                          MediaQuery.of(context).padding.top - 
-                          MediaQuery.of(context).padding.bottom - 
-                          kToolbarHeight,
-              ),
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: ResponsiveTheme.isDesktop(context) ? 800 : double.infinity,
-                  ),
-                  child: Form(
-                    key: _formKey,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: ResponsiveTheme.getResponsivePadding(context),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height - 
+                                MediaQuery.of(context).padding.top - 
+                                MediaQuery.of(context).padding.bottom - 
+                                kToolbarHeight,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          'Registrar Entrada',
-                          style: HomeTheme.titleStyle.copyWith(
-                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                        TextFormField(
-                          controller: _placaController,
-                          decoration: FormTheme.inputDecoration(
-                            labelText: 'Placa do Veículo',
-                            hintText: 'ABC-1234 ou ABC1D23',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Informe a placa do veículo';
-                            }
-                            final regex = RegExp(
-                              r'^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$',
-                            );
-                            if (!regex.hasMatch(value)) {
-                              return 'Placa inválida';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Expanded(
-                              child: Container(
-                                height: 48,
-                                child: ElevatedButton.icon(
-                                  onPressed: () => _tirarFoto(true),
-                                  icon: Icon(
-                                    Icons.camera_alt,
-                                    size: ResponsiveTheme.getResponsiveIconSize(context),
-                                  ),
-                                  label: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      'Foto da Placa',
-                                      style: TextStyle(
-                                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                                      ),
-                                    ),
-                                  ),
-                                  style: FormTheme.elevatedButtonStyle,
-                                ),
+                            IconButton(
+                              icon: const Icon(Icons.arrow_back),
+                              onPressed: () => Navigator.pop(context),
+                              color: Colors.black,
+                            ),
+                            Text(
+                              'Registrar Entrada',
+                              style: HomeTheme.titleStyle.copyWith(
+                                fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
                               ),
                             ),
-                            SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context) * 2),
-                            Expanded(
-                              child: Container(
-                                height: 48,
-                                child: ElevatedButton.icon(
-                                  onPressed: () => _tirarFoto(false),
-                                  icon: Icon(
-                                    Icons.camera_alt,
-                                    size: ResponsiveTheme.getResponsiveIconSize(context),
-                                  ),
-                                  label: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: Text(
-                                      'Foto do Veículo',
-                                      style: TextStyle(
-                                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                                      ),
-                                    ),
-                                  ),
-                                  style: FormTheme.elevatedButtonStyle,
-                                ),
-                              ),
-                            ),
+                            const SizedBox(width: 48),
                           ],
                         ),
-                        if (_fotoPlaca != null || _fotoVeiculo != null)
-                          SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
-                        if (_fotoPlaca != null)
-                          Container(
-                            decoration: FormTheme.imageContainerDecoration,
-                            child: Image.file(
-                              _fotoPlaca!,
-                              height: ResponsiveTheme.getResponsiveImageHeight(context),
-                              fit: BoxFit.cover,
+                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 2),
+                        Align(
+                          alignment: Alignment.topCenter,
+                          child: Container(
+                            constraints: BoxConstraints(
+                              maxWidth: ResponsiveTheme.isDesktop(context) ? 800 : double.infinity,
                             ),
-                          ),
-                        if (_fotoVeiculo != null)
-                          Container(
-                            decoration: FormTheme.imageContainerDecoration,
-                            child: Image.file(
-                              _fotoVeiculo!,
-                              height: ResponsiveTheme.getResponsiveImageHeight(context),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
-                        DropdownButtonFormField<FormaPagamento>(
-                          value: _formaPagamento,
-                          decoration: FormTheme.inputDecoration(
-                            labelText: 'Forma de Pagamento',
-                          ),
-                          items: FormaPagamento.values.map((forma) {
-                            return DropdownMenuItem(
-                              value: forma,
-                              child: Text(
-                                forma.toString().split('.').last,
-                                style: TextStyle(
-                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _formaPagamento = value!;
-                              _pagamentoAutorizado = false;
-                            });
-                          },
-                        ),
-                        if (_formaPagamento == FormaPagamento.credito) ...[
-                          SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
-                          DropdownButtonFormField<int>(
-                            value: _parcelas,
-                            decoration: FormTheme.inputDecoration(
-                              labelText: 'Parcelas',
-                            ),
-                            items: List.generate(12, (index) {
-                              return DropdownMenuItem(
-                                value: index + 1,
-                                child: Text(
-                                  '${index + 1}x',
-                                  style: TextStyle(
-                                    fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Text(
+                                    'Registrar Entrada',
+                                    style: HomeTheme.titleStyle.copyWith(
+                                      fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
-                                ),
-                              );
-                            }),
-                            onChanged: (value) {
-                              setState(() {
-                                _parcelas = value!;
-                              });
-                            },
-                          ),
-                        ],
-                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(ResponsiveTheme.getResponsiveSpacing(context) * 2),
-                            child: Column(
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Horas',
-                                            style: TextStyle(
-                                              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
-                                              color: Colors.grey[600],
+                                  SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
+                                  TextFormField(
+                                    controller: _placaController,
+                                    decoration: FormTheme.inputDecoration(
+                                      labelText: 'Placa do Veículo',
+                                      hintText: 'ABC-1234 ou ABC1D23',
+                                    ),
+                                    textCapitalization: TextCapitalization.characters,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+                                    ],
+                                    validator: (value) {
+                                      if (value == null || value.isEmpty) {
+                                        return 'Informe a placa do veículo';
+                                      }
+                                      final regex = RegExp(
+                                        r'^[A-Z]{3}-?\d{4}$|^[A-Z]{3}\d[A-Z]\d{2}$',
+                                      );
+                                      if (!regex.hasMatch(value)) {
+                                        return 'Placa inválida';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          height: 48,
+                                          child: ElevatedButton.icon(
+                                            onPressed: () => _tirarFoto(true),
+                                            icon: Icon(
+                                              Icons.camera_alt,
+                                              size: ResponsiveTheme.getResponsiveIconSize(context),
                                             ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(Icons.remove_circle_outline),
-                                                onPressed: () {
-                                                  final horas = int.tryParse(_horasController.text) ?? 1;
-                                                  if (horas > 1) {
-                                                    _horasController.text = (horas - 1).toString();
-                                                    _calcularTotal();
-                                                  }
-                                                },
-                                              ),
-                                              SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
-                                              Text(
-                                                _horasController.text,
+                                            label: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                'Foto da Placa',
                                                 style: TextStyle(
-                                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
-                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
                                                 ),
                                               ),
-                                              SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
-                                              IconButton(
-                                                icon: const Icon(Icons.add_circle_outline),
-                                                onPressed: () {
-                                                  final horas = int.tryParse(_horasController.text) ?? 1;
-                                                  _horasController.text = (horas + 1).toString();
-                                                  _calcularTotal();
-                                                },
+                                            ),
+                                            style: FormTheme.elevatedButtonStyle,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context) * 2),
+                                      Expanded(
+                                        child: Container(
+                                          height: 48,
+                                          child: ElevatedButton.icon(
+                                            onPressed: () => _tirarFoto(false),
+                                            icon: Icon(
+                                              Icons.camera_alt,
+                                              size: ResponsiveTheme.getResponsiveIconSize(context),
+                                            ),
+                                            label: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              child: Text(
+                                                'Foto do Veículo',
+                                                style: TextStyle(
+                                                  fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                                ),
+                                              ),
+                                            ),
+                                            style: FormTheme.elevatedButtonStyle,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (_fotoPlaca != null || _fotoVeiculo != null)
+                                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                                  if (_fotoPlaca != null)
+                                    Container(
+                                      decoration: FormTheme.imageContainerDecoration,
+                                      child: Image.file(
+                                        _fotoPlaca!,
+                                        height: ResponsiveTheme.getResponsiveImageHeight(context),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  if (_fotoVeiculo != null)
+                                    Container(
+                                      decoration: FormTheme.imageContainerDecoration,
+                                      child: Image.file(
+                                        _fotoVeiculo!,
+                                        height: ResponsiveTheme.getResponsiveImageHeight(context),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                                  DropdownButtonFormField<FormaPagamento>(
+                                    value: _formaPagamento,
+                                    decoration: FormTheme.inputDecoration(
+                                      labelText: 'Forma de Pagamento',
+                                    ),
+                                    items: FormaPagamento.values.map((forma) {
+                                      return DropdownMenuItem(
+                                        value: forma,
+                                        child: Text(
+                                          forma.toString().split('.').last,
+                                          style: TextStyle(
+                                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _formaPagamento = value!;
+                                        _pagamentoAutorizado = false;
+                                      });
+                                    },
+                                  ),
+                                  if (_formaPagamento == FormaPagamento.credito) ...[
+                                    SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 3),
+                                    DropdownButtonFormField<int>(
+                                      value: _parcelas,
+                                      decoration: FormTheme.inputDecoration(
+                                        labelText: 'Parcelas',
+                                      ),
+                                      items: List.generate(12, (index) {
+                                        return DropdownMenuItem(
+                                          value: index + 1,
+                                          child: Text(
+                                            '${index + 1}x',
+                                            style: TextStyle(
+                                              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
+                                            ),
+                                          ),
+                                        );
+                                      }),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _parcelas = value!;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                  SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).cardColor,
+                                      borderRadius: BorderRadius.circular(8),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Padding(
+                                      padding: EdgeInsets.all(ResponsiveTheme.getResponsiveSpacing(context) * 2),
+                                      child: Column(
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Horas',
+                                                      style: TextStyle(
+                                                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                      children: [
+                                                        IconButton(
+                                                          icon: const Icon(Icons.remove_circle_outline),
+                                                          onPressed: () {
+                                                            final horas = int.tryParse(_horasController.text) ?? 1;
+                                                            if (horas > 1) {
+                                                              _horasController.text = (horas - 1).toString();
+                                                              _calcularTotal();
+                                                            }
+                                                          },
+                                                        ),
+                                                        SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
+                                                        Text(
+                                                          _horasController.text,
+                                                          style: TextStyle(
+                                                            fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
+                                                            fontWeight: FontWeight.bold,
+                                                          ),
+                                                        ),
+                                                        SizedBox(width: ResponsiveTheme.getResponsiveSpacing(context)),
+                                                        IconButton(
+                                                          icon: const Icon(Icons.add_circle_outline),
+                                                          onPressed: () {
+                                                            final horas = int.tryParse(_horasController.text) ?? 1;
+                                                            _horasController.text = (horas + 1).toString();
+                                                            _calcularTotal();
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              Container(
+                                                height: 50,
+                                                width: 1,
+                                                color: Colors.grey[300],
+                                              ),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Padding(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                                                      child: Text(
+                                                        'Valor Total',
+                                                        style: TextStyle(
+                                                          fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
+                                                          color: Colors.grey[600],
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Center(
+                                                      child: Text(
+                                                        'R\$ ${_valorTotal.toStringAsFixed(2)}',
+                                                        style: TextStyle(
+                                                          fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Theme.of(context).primaryColor,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ],
                                       ),
                                     ),
-                                    Container(
-                                      height: 50,
-                                      width: 1,
-                                      color: Colors.grey[300],
-                                    ),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                                            child: Text(
-                                              'Valor Total',
-                                              style: TextStyle(
-                                                fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 14),
-                                                color: Colors.grey[600],
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Center(
-                                            child: Text(
-                                              'R\$ ${_valorTotal.toStringAsFixed(2)}',
-                                              style: TextStyle(
-                                                fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 20),
-                                                fontWeight: FontWeight.bold,
-                                                color: Theme.of(context).primaryColor,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                  ),
+                                  SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
+                                  ElevatedButton(
+                                    onPressed: _processarPagamento,
+                                    style: FormTheme.elevatedButtonStyle,
+                                    child: Text(
+                                      'Processar Pagamento',
+                                      style: TextStyle(
+                                        fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                  SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 2),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
-                        ElevatedButton(
-                          onPressed: _processarPagamento,
-                          style: FormTheme.elevatedButtonStyle,
-                          child: Text(
-                            'Processar Pagamento',
-                            style: TextStyle(
-                              fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 16),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 2),
                       ],
                     ),
                   ),
                 ),
               ),
-            ),
+              const FooterWidget(),
+            ],
           ),
         ),
       ),

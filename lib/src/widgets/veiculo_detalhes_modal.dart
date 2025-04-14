@@ -14,6 +14,12 @@ class VeiculoDetalhesModal extends StatelessWidget {
     required this.veiculo,
   }) : super(key: key);
 
+  String _formatarHora(DateTime data) {
+    final hora = data.hour.toString().padLeft(2, '0');
+    final minuto = data.minute.toString().padLeft(2, '0');
+    return '$hora:$minuto';
+  }
+
   Future<void> _registrarSaida(BuildContext context) async {
     try {
       final service = Provider.of<EstacionamentoService>(context, listen: false);
@@ -81,9 +87,18 @@ class VeiculoDetalhesModal extends StatelessWidget {
               _buildInfoRow(
                 context,
                 'Entrada:',
-                '${veiculo.horaEntrada.day}/${veiculo.horaEntrada.month}/${veiculo.horaEntrada.year} ${veiculo.horaEntrada.hour}:${veiculo.horaEntrada.minute}',
+                '${veiculo.horaEntrada.day}/${veiculo.horaEntrada.month}/${veiculo.horaEntrada.year} ${_formatarHora(veiculo.horaEntrada)}',
                 Icons.access_time,
               ),
+              if (veiculo.horaSaida != null) ...[
+                SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
+                _buildInfoRow(
+                  context,
+                  'Saída:',
+                  '${veiculo.horaSaida!.day}/${veiculo.horaSaida!.month}/${veiculo.horaSaida!.year} ${_formatarHora(veiculo.horaSaida!)}',
+                  Icons.exit_to_app,
+                ),
+              ],
               SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context)),
               _buildInfoRow(
                 context,

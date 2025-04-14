@@ -59,8 +59,8 @@ class EstacionamentoService with ChangeNotifier {
   }
 
   Future<bool> registrarEntradaVeiculo(Veiculo veiculo) async {
-    if (_veiculosNoPatio.any((v) => v.placa == veiculo.placa)) {
-      return false;
+    if (isVeiculoNoPatio(veiculo.placa)) {
+      throw Exception('Veículo com placa ${veiculo.placa} já está registrado no pátio');
     }
 
     _veiculosNoPatio.add(veiculo);
@@ -70,14 +70,14 @@ class EstacionamentoService with ChangeNotifier {
   }
 
   Future<bool> registrarSaidaVeiculo(String placa) async {
+    if (!isVeiculoNoPatio(placa)) {
+      throw Exception('Veículo com placa $placa não está registrado no pátio');
+    }
+
     final veiculo = _veiculosNoPatio.firstWhere(
       (v) => v.placa == placa,
-      orElse: () => Veiculo(placa: '', horaEntrada: DateTime.now()),
+      orElse: () => throw Exception('Veículo com placa $placa não encontrado na lista de veículos no pátio'),
     );
-
-    if (veiculo.placa.isEmpty) {
-      return false;
-    }
 
     _veiculosNoPatio.remove(veiculo);
     veiculo.horaSaida = DateTime.now();
@@ -97,6 +97,11 @@ class EstacionamentoService with ChangeNotifier {
     return _veiculosBox.values
         .where((veiculo) => veiculo.placa == placa)
         .toList();
+  }
+
+  Future<List<Veiculo>> buscarHistoricoCompleto() async {
+    return _veiculosBox.values.toList()
+      ..sort((a, b) => b.horaEntrada.compareTo(a.horaEntrada));
   }
 
   Future<Veiculo?> buscarVeiculo(String placa) async {
@@ -132,11 +137,11 @@ class EstacionamentoService with ChangeNotifier {
     String? fotoVeiculo,
   }) async {
     if (isVeiculoNoPatio(placa)) {
-      throw Exception('Veículo já está no pátio');
+      throw Exception('Veículo com placa $placa já está registrado no pátio');
     }
 
     if (!Veiculo.validarPlaca(placa)) {
-      throw Exception('Placa inválida');
+      throw Exception('Placa $placa é inválida');
     }
 
     final veiculo = Veiculo(
@@ -172,12 +177,16 @@ class EstacionamentoService with ChangeNotifier {
   Future<Ticket> registrarSaidaComTicket(String codigoTicket) async {
     final ticket = _ticketsBox.values.firstWhere(
       (t) => t.codigo == codigoTicket && t.isEntrada,
-      orElse: () => throw Exception('Ticket não encontrado'),
+      orElse: () => throw Exception('Ticket de entrada com código $codigoTicket não encontrado'),
     );
+
+    if (!isVeiculoNoPatio(ticket.veiculo)) {
+      throw Exception('Veículo com placa ${ticket.veiculo} não está registrado no pátio');
+    }
 
     final veiculo = await _getVeiculo(ticket.veiculo);
     if (veiculo == null) {
-      throw Exception('Veículo não encontrado');
+      throw Exception('Veículo com placa ${ticket.veiculo} não encontrado no sistema');
     }
 
     veiculo.horaSaida = DateTime.now();
@@ -186,7 +195,14 @@ class EstacionamentoService with ChangeNotifier {
 
     final ticketSaida = Ticket(
       veiculo: ticket.veiculo,
-      pagamento: ticket.pagamento,
+      pagamento: Pagamento(
+        valor: 0,
+        formaPagamento: FormaPagamento.dinheiro,
+        parcelas: 1,
+        dataHora: DateTime.now(),
+        autorizado: true,
+        data: DateTime.now(),
+      ),
       codigo: const Uuid().v4(),
       cnpjEstacionamento: cnpjEstacionamento,
       nomeEstacionamento: nomeEstacionamento,
@@ -292,27 +308,70 @@ class EstacionamentoService with ChangeNotifier {
     }
   }
 
-  Future<bool> registrarEntrada(String placa, {required bool isEntrada}) async {
+  Future<void> registrarEntrada({
+    required String placa,
+    required String cnpjEstacionamento,
+    required String nomeEstacionamento,
+    String? fotoPlaca,
+    String? fotoVeiculo,
+  }) async {
     try {
-      final veiculo = await _getVeiculo(placa);
-      if (veiculo == null) {
-        return false;
-      }
+      final veiculoBox = await Hive.openBox<Veiculo>('veiculos');
+      final ticketBox = await Hive.openBox<Ticket>('tickets');
 
-      if (isEntrada) {
-        veiculo.horaEntrada = DateTime.now();
-        veiculo.isNoPatio = true;
+      // Verifica se o veículo já existe
+      final veiculoExistente = veiculoBox.values.firstWhere(
+        (v) => v.placa == placa,
+        orElse: () => Veiculo(placa: '', horaEntrada: DateTime.now()),
+      );
+
+      if (veiculoExistente.placa.isNotEmpty) {
+        // Se o veículo já existe, atualiza os dados
+        veiculoExistente.horaEntrada = DateTime.now();
+        veiculoExistente.horaSaida = null;
+        veiculoExistente.isNoPatio = true;
+        veiculoExistente.tempoPago = null;
+        veiculoExistente.totalPassagens += 1;
+        if (fotoPlaca != null) veiculoExistente.fotoPlaca = fotoPlaca;
+        if (fotoVeiculo != null) veiculoExistente.fotoVeiculo = fotoVeiculo;
+        
+        await veiculoBox.put(veiculoExistente.placa, veiculoExistente);
       } else {
-        veiculo.horaSaida = DateTime.now();
-        veiculo.isNoPatio = false;
+        // Se é um novo veículo, cria um novo registro
+        final veiculo = Veiculo(
+          placa: placa,
+          horaEntrada: DateTime.now(),
+          fotoPlaca: fotoPlaca,
+          fotoVeiculo: fotoVeiculo,
+          isNoPatio: true,
+          totalPassagens: 1,
+        );
+        await veiculoBox.put(placa, veiculo);
       }
 
-      await veiculo.save();
-      notifyListeners();
-      return true;
+      // Cria o ticket de entrada
+      final ticket = Ticket(
+        veiculo: placa,
+        pagamento: Pagamento(
+          valor: 0,
+          formaPagamento: FormaPagamento.dinheiro,
+          parcelas: 1,
+          dataHora: DateTime.now(),
+          autorizado: true,
+          data: DateTime.now(),
+        ),
+        codigo: const Uuid().v4(),
+        cnpjEstacionamento: cnpjEstacionamento,
+        nomeEstacionamento: nomeEstacionamento,
+        isEntrada: true,
+        qrCode: const Uuid().v4(),
+      );
+      await ticketBox.add(ticket);
+
+      await veiculoBox.close();
+      await ticketBox.close();
     } catch (e) {
-      print('Erro ao registrar entrada/saída: $e');
-      return false;
+      throw Exception('Erro ao registrar entrada: $e');
     }
   }
 
