@@ -111,8 +111,8 @@ class EstacionamentoService with ChangeNotifier {
 
   Future<Ticket?> buscarTicket(String codigo) async {
     try {
-      return _tickets.firstWhere(
-        (ticket) => ticket.codigo == codigo,
+      return _ticketsBox.values.firstWhere(
+        (ticket) => ticket.codigo == codigo || ticket.qrCode == codigo,
       );
     } catch (e) {
       return null;
@@ -147,17 +147,21 @@ class EstacionamentoService with ChangeNotifier {
       isNoPatio: true,
     );
 
-    await _veiculosBox.add(veiculo);
+    await _veiculosBox.put(placa, veiculo);
     _veiculosNoPatio.add(veiculo);
     notifyListeners();
+
+    final ticketId = const Uuid().v4();
+    final qrCode = const Uuid().v4();
 
     final ticket = Ticket(
       veiculo: placa,
       pagamento: pagamento,
-      codigo: const Uuid().v4(),
+      codigo: ticketId,
       cnpjEstacionamento: cnpjEstacionamento,
       nomeEstacionamento: nomeEstacionamento,
       isEntrada: true,
+      qrCode: qrCode,
     );
 
     await _ticketsBox.add(ticket);
@@ -187,6 +191,7 @@ class EstacionamentoService with ChangeNotifier {
       cnpjEstacionamento: cnpjEstacionamento,
       nomeEstacionamento: nomeEstacionamento,
       isEntrada: false,
+      qrCode: const Uuid().v4(),
     );
 
     await _ticketsBox.add(ticketSaida);
@@ -240,27 +245,50 @@ class EstacionamentoService with ChangeNotifier {
     try {
       final veiculo = await _getVeiculo(placa);
       if (veiculo == null) {
-        return false;
+        throw Exception('Veículo não encontrado no pátio');
       }
 
+      if (!veiculo.isNoPatio) {
+        throw Exception('Veículo já registrou saída anteriormente');
+      }
+
+      // Atualiza o veículo
       veiculo.horaSaida = DateTime.now();
       veiculo.isNoPatio = false;
       await veiculo.save();
 
+      // Remove da lista de veículos no pátio
+      _veiculosNoPatio.removeWhere((v) => v.placa == placa);
+
+      notifyListeners();
       return true;
     } catch (e) {
-      print('Erro ao registrar saída: $e');
-      return false;
+      debugPrint('Erro ao registrar saída: $e');
+      rethrow; // Re-lança o erro para ser tratado na UI
     }
   }
 
   Future<Veiculo?> _getVeiculo(String placa) async {
     try {
-      final box = await Hive.openBox<Veiculo>('veiculos');
-      return box.get(placa);
+      // Primeiro tenta buscar na lista em memória
+      final veiculoEmMemoria = _veiculosNoPatio.firstWhere(
+        (v) => v.placa == placa,
+        orElse: () => throw Exception('Veículo não encontrado na lista em memória'),
+      );
+      return veiculoEmMemoria;
     } catch (e) {
-      print('Erro ao buscar veículo: $e');
-      return null;
+      debugPrint('Veículo não encontrado na lista em memória: $e');
+      // Se não encontrar na memória, busca no Hive
+      try {
+        final veiculo = _veiculosBox.get(placa);
+        if (veiculo != null && veiculo.isNoPatio) {
+          return veiculo;
+        }
+        return null;
+      } catch (e) {
+        debugPrint('Erro ao buscar veículo no Hive: $e');
+        return null;
+      }
     }
   }
 
