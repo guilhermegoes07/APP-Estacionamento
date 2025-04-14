@@ -5,7 +5,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'dart:typed_data';
 import '../widgets/comprovante_pagamento.dart';
 import '../services/estacionamento_service.dart';
 import '../models/pagamento.dart';
@@ -25,6 +28,25 @@ class ComprovanteScreen extends StatelessWidget {
     required this.ticketId,
   });
 
+  Future<Uint8List> _generateQrCodeImage(String data) async {
+    final qrPainter = QrPainter(
+      data: data,
+      version: QrVersions.auto,
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: Colors.black,
+      ),
+      dataModuleStyle: const QrDataModuleStyle(
+        dataModuleShape: QrDataModuleShape.square,
+        color: Colors.black,
+      ),
+    );
+
+    final image = await qrPainter.toImage(200);
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
+
   Future<void> _gerarPDF(BuildContext context) async {
     try {
       final pdf = pw.Document();
@@ -32,8 +54,8 @@ class ComprovanteScreen extends StatelessWidget {
       final dateFormat = DateFormat('dd/MM/yyyy');
       final timeFormat = DateFormat('HH:mm');
 
-      // Gerar QR Code como texto
-      final qrCodeText = pagamento.codigoTransacao;
+      // Gerar QR Code como imagem
+      final qrCodeImage = await _generateQrCodeImage(pagamento.codigoTransacao);
 
       pdf.addPage(
         pw.Page(
@@ -76,13 +98,9 @@ class ComprovanteScreen extends StatelessWidget {
                         decoration: pw.BoxDecoration(
                           border: pw.Border.all(),
                         ),
-                        child: pw.Center(
-                          child: pw.Text(
-                            qrCodeText,
-                            style: pw.TextStyle(
-                              fontSize: 12,
-                            ),
-                          ),
+                        child: pw.Image(
+                          pw.MemoryImage(qrCodeImage),
+                          fit: pw.BoxFit.contain,
                         ),
                       ),
                       pw.SizedBox(height: 8),
@@ -108,6 +126,7 @@ class ComprovanteScreen extends StatelessWidget {
                 ),
                 pw.Text('DATA: ${dateFormat.format(pagamento.dataHora)}'),
                 pw.Text('HORA: ${timeFormat.format(pagamento.dataHora)}'),
+                pw.Text('PLACA: $veiculo'),
                 pw.Text('OPERADORA: MERCADO PAGO'),
                 pw.Text('BANDEIRA: VISA'),
                 pw.Text('AUTORIZAÇÃO: ${pagamento.codigoTransacao.substring(0, 6)}'),
@@ -228,6 +247,7 @@ class ComprovanteScreen extends StatelessWidget {
             formaPagamento: pagamento.formaPagamentoStr,
             data: dateFormat.format(pagamento.dataHora),
             hora: timeFormat.format(pagamento.dataHora),
+            placa: veiculo,
             operadora: 'MERCADO PAGO',
             bandeira: 'VISA',
             autorizacao: pagamento.codigoTransacao.substring(0, 6),

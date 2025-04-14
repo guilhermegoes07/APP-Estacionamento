@@ -63,8 +63,31 @@ class EstacionamentoService with ChangeNotifier {
       throw Exception('Veículo com placa ${veiculo.placa} já está registrado no pátio');
     }
 
-    _veiculosNoPatio.add(veiculo);
-    await _veiculosBox.add(veiculo);
+    // Verifica se o veículo já existe
+    final veiculoExistente = _veiculosBox.values.firstWhere(
+      (v) => v.placa == veiculo.placa,
+      orElse: () => Veiculo(placa: '', horaEntrada: DateTime.now()),
+    );
+
+    if (veiculoExistente.placa.isNotEmpty) {
+      // Se o veículo já existe, atualiza os dados e incrementa o contador
+      veiculoExistente.horaEntrada = veiculo.horaEntrada;
+      veiculoExistente.horaSaida = null;
+      veiculoExistente.isNoPatio = true;
+      veiculoExistente.tempoPago = veiculo.tempoPago;
+      veiculoExistente.totalPassagens = (veiculoExistente.totalPassagens ?? 0) + 1;
+      if (veiculo.fotoPlaca != null) veiculoExistente.fotoPlaca = veiculo.fotoPlaca;
+      if (veiculo.fotoVeiculo != null) veiculoExistente.fotoVeiculo = veiculo.fotoVeiculo;
+      
+      await _veiculosBox.put(veiculoExistente.placa, veiculoExistente);
+      _veiculosNoPatio.add(veiculoExistente);
+    } else {
+      // Se é um novo veículo, cria um novo registro com contador inicializado
+      veiculo.totalPassagens = 1;
+      await _veiculosBox.put(veiculo.placa, veiculo);
+      _veiculosNoPatio.add(veiculo);
+    }
+
     notifyListeners();
     return true;
   }
@@ -96,7 +119,8 @@ class EstacionamentoService with ChangeNotifier {
   Future<List<Veiculo>> buscarHistorico(String placa) async {
     return _veiculosBox.values
         .where((veiculo) => veiculo.placa == placa)
-        .toList();
+        .toList()
+      ..sort((a, b) => b.horaEntrada.compareTo(a.horaEntrada));
   }
 
   Future<List<Veiculo>> buscarHistoricoCompleto() async {
@@ -136,7 +160,13 @@ class EstacionamentoService with ChangeNotifier {
     String? fotoPlaca,
     String? fotoVeiculo,
   }) async {
-    if (isVeiculoNoPatio(placa)) {
+    // Verifica se o veículo está no pátio
+    final veiculoNoPatio = _veiculosBox.values.firstWhere(
+      (v) => v.placa == placa && v.isNoPatio,
+      orElse: () => Veiculo(placa: '', horaEntrada: DateTime.now()),
+    );
+
+    if (veiculoNoPatio.placa.isNotEmpty) {
       throw Exception('Veículo com placa $placa já está registrado no pátio');
     }
 
@@ -144,18 +174,42 @@ class EstacionamentoService with ChangeNotifier {
       throw Exception('Placa $placa é inválida');
     }
 
-    final veiculo = Veiculo(
-      placa: placa,
-      horaEntrada: DateTime.now(),
-      fotoPlaca: fotoPlaca,
-      fotoVeiculo: fotoVeiculo,
-      isNoPatio: true,
+    // Verifica se o veículo já existe
+    final veiculoExistente = _veiculosBox.values.firstWhere(
+      (v) => v.placa == placa,
+      orElse: () => Veiculo(placa: '', horaEntrada: DateTime.now()),
     );
 
-    await _veiculosBox.put(placa, veiculo);
-    _veiculosNoPatio.add(veiculo);
-    notifyListeners();
+    Veiculo veiculo;
+    if (veiculoExistente.placa.isNotEmpty) {
+      // Se o veículo já existe, atualiza os dados e incrementa o contador
+      veiculoExistente.horaEntrada = DateTime.now();
+      veiculoExistente.horaSaida = null;
+      veiculoExistente.isNoPatio = true;
+      veiculoExistente.tempoPago = null;
+      veiculoExistente.totalPassagens = (veiculoExistente.totalPassagens ?? 0) + 1;
+      if (fotoPlaca != null) veiculoExistente.fotoPlaca = fotoPlaca;
+      if (fotoVeiculo != null) veiculoExistente.fotoVeiculo = fotoVeiculo;
+      
+      await _veiculosBox.put(veiculoExistente.placa, veiculoExistente);
+      veiculo = veiculoExistente;
+    } else {
+      // Se é um novo veículo, cria um novo registro com contador inicializado
+      veiculo = Veiculo(
+        placa: placa,
+        horaEntrada: DateTime.now(),
+        fotoPlaca: fotoPlaca,
+        fotoVeiculo: fotoVeiculo,
+        isNoPatio: true,
+        totalPassagens: 1,
+      );
+      await _veiculosBox.put(placa, veiculo);
+    }
 
+    // Adiciona o veículo à lista de veículos no pátio
+    _veiculosNoPatio.add(veiculo);
+
+    // Cria o ticket de entrada
     final ticketId = const Uuid().v4();
     final qrCode = const Uuid().v4();
 
@@ -169,7 +223,12 @@ class EstacionamentoService with ChangeNotifier {
       qrCode: qrCode,
     );
 
+    // Salva o ticket
     await _ticketsBox.add(ticket);
+
+    // Notifica os listeners para atualizar a UI
+    notifyListeners();
+
     return ticket;
   }
 
@@ -316,29 +375,38 @@ class EstacionamentoService with ChangeNotifier {
     String? fotoVeiculo,
   }) async {
     try {
-      final veiculoBox = await Hive.openBox<Veiculo>('veiculos');
-      final ticketBox = await Hive.openBox<Ticket>('tickets');
+      // Verifica se o veículo está no pátio
+      final veiculoNoPatio = _veiculosBox.values.firstWhere(
+        (v) => v.placa == placa && v.isNoPatio,
+        orElse: () => Veiculo(placa: '', horaEntrada: DateTime.now()),
+      );
+
+      if (veiculoNoPatio.placa.isNotEmpty) {
+        throw Exception('Veículo com placa $placa já está registrado no pátio');
+      }
 
       // Verifica se o veículo já existe
-      final veiculoExistente = veiculoBox.values.firstWhere(
+      final veiculoExistente = _veiculosBox.values.firstWhere(
         (v) => v.placa == placa,
         orElse: () => Veiculo(placa: '', horaEntrada: DateTime.now()),
       );
 
+      Veiculo veiculo;
       if (veiculoExistente.placa.isNotEmpty) {
-        // Se o veículo já existe, atualiza os dados
+        // Se o veículo já existe, atualiza os dados e incrementa o contador
         veiculoExistente.horaEntrada = DateTime.now();
         veiculoExistente.horaSaida = null;
         veiculoExistente.isNoPatio = true;
         veiculoExistente.tempoPago = null;
-        veiculoExistente.totalPassagens += 1;
+        veiculoExistente.totalPassagens = (veiculoExistente.totalPassagens ?? 0) + 1;
         if (fotoPlaca != null) veiculoExistente.fotoPlaca = fotoPlaca;
         if (fotoVeiculo != null) veiculoExistente.fotoVeiculo = fotoVeiculo;
         
-        await veiculoBox.put(veiculoExistente.placa, veiculoExistente);
+        await _veiculosBox.put(veiculoExistente.placa, veiculoExistente);
+        veiculo = veiculoExistente;
       } else {
-        // Se é um novo veículo, cria um novo registro
-        final veiculo = Veiculo(
+        // Se é um novo veículo, cria um novo registro com contador inicializado
+        veiculo = Veiculo(
           placa: placa,
           horaEntrada: DateTime.now(),
           fotoPlaca: fotoPlaca,
@@ -346,8 +414,11 @@ class EstacionamentoService with ChangeNotifier {
           isNoPatio: true,
           totalPassagens: 1,
         );
-        await veiculoBox.put(placa, veiculo);
+        await _veiculosBox.put(placa, veiculo);
       }
+
+      // Adiciona o veículo à lista de veículos no pátio
+      _veiculosNoPatio.add(veiculo);
 
       // Cria o ticket de entrada
       final ticket = Ticket(
@@ -366,10 +437,12 @@ class EstacionamentoService with ChangeNotifier {
         isEntrada: true,
         qrCode: const Uuid().v4(),
       );
-      await ticketBox.add(ticket);
 
-      await veiculoBox.close();
-      await ticketBox.close();
+      // Salva o ticket
+      await _ticketsBox.add(ticket);
+
+      // Notifica os listeners para atualizar a UI
+      notifyListeners();
     } catch (e) {
       throw Exception('Erro ao registrar entrada: $e');
     }

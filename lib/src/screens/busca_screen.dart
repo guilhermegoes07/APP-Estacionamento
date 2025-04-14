@@ -223,14 +223,13 @@ class _BuscaScreenState extends State<BuscaScreen> {
                               child: InkWell(
                                 onTap: () async {
                                   final service = Provider.of<EstacionamentoService>(context, listen: false);
-                                  final historico = await service.buscarHistorico(veiculo.placa);
                                   if (mounted) {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) => DetalhesVeiculoScreen(
                                           veiculo: veiculo,
-                                          totalPassagens: historico.length,
+                                          totalPassagens: veiculo.totalPassagens,
                                         ),
                                       ),
                                     );

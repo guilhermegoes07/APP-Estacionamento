@@ -24,13 +24,14 @@ class VeiculoAdapter extends TypeAdapter<Veiculo> {
       fotoVeiculo: fields[4] as String?,
       isNoPatio: fields[5] as bool,
       tempoPago: fields[6] as int?,
+      totalPassagens: fields[7] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, Veiculo obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.placa)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class VeiculoAdapter extends TypeAdapter<Veiculo> {
       ..writeByte(5)
       ..write(obj.isNoPatio)
       ..writeByte(6)
-      ..write(obj.tempoPago);
+      ..write(obj.tempoPago)
+      ..writeByte(7)
+      ..write(obj.totalPassagens);
   }
 
   @override

@@ -348,13 +348,6 @@ class _EntradaScreenState extends State<EntradaScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Text(
-                                    'Registrar Entrada',
-                                    style: HomeTheme.titleStyle.copyWith(
-                                      fontSize: ResponsiveTheme.getResponsiveFontSize(context, baseSize: 24),
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
                                   SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
                                   TextFormField(
                                     controller: _placaController,

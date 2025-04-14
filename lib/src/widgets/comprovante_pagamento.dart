@@ -9,6 +9,7 @@ class ComprovantePagamento extends StatelessWidget {
   final String formaPagamento;
   final String data;
   final String hora;
+  final String placa;
   final String operadora;
   final String bandeira;
   final String autorizacao;
@@ -26,6 +27,7 @@ class ComprovantePagamento extends StatelessWidget {
     required this.formaPagamento,
     required this.data,
     required this.hora,
+    required this.placa,
     required this.operadora,
     required this.bandeira,
     required this.autorizacao,
@@ -165,6 +167,14 @@ class ComprovantePagamento extends StatelessWidget {
           ),
           Text(
             'HORA: $hora',
+            style: TextStyle(
+              fontFamily: 'Courier',
+              fontSize: baseFontSize,
+              height: 1.2,
+            ),
+          ),
+          Text(
+            'PLACA: $placa',
             style: TextStyle(
               fontFamily: 'Courier',
               fontSize: baseFontSize,

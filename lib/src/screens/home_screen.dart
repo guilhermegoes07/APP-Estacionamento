@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     left: ResponsiveTheme.getResponsiveSpacing(context),
                     right: ResponsiveTheme.getResponsiveSpacing(context),
                     top: ResponsiveTheme.getResponsiveSpacing(context),
-                    bottom: ResponsiveTheme.getResponsiveSpacing(context) * 4,
+                    bottom: ResponsiveTheme.getResponsiveSpacing(context) * 8,
                   ),
                   child: Column(
                     children: [
@@ -89,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         isLoading: _isLoading,
                         child: _buildVehiclesList(context),
                       ),
+                      SizedBox(height: ResponsiveTheme.getResponsiveSpacing(context) * 4),
                     ],
                   ),
                 ),
